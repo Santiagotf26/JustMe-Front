@@ -1,0 +1,138 @@
+.register-page {
+  min-height: 100vh;
+  display: flex;
+}
+
+.register-3d-side {
+  display: none;
+  position: relative;
+  width: 50%;
+  background: linear-gradient(135deg, #24243e, #302b63, #0f0c29);
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .register-3d-side { display: block; }
+}
+
+/* Progress */
+.register-progress {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+  position: relative;
+}
+
+.register-progress::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 30px;
+  right: 30px;
+  height: 2px;
+  background: var(--neutral-200);
+  z-index: 0;
+}
+
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  z-index: 1;
+}
+
+.progress-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--neutral-200);
+  color: var(--neutral-500);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  transition: all var(--transition-base);
+}
+
+.progress-active .progress-dot {
+  background: var(--primary-500);
+  color: white;
+}
+
+.progress-done .progress-dot {
+  background: var(--success-500);
+  color: white;
+}
+
+.progress-label {
+  font-size: 11px;
+  color: var(--neutral-400);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.progress-active .progress-label { color: var(--primary-600); }
+
+/* Role Cards */
+.step-question {
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+  font-size: var(--text-lg);
+}
+
+.role-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.role-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 2px solid var(--neutral-200);
+  border-radius: var(--radius-2xl);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.role-card:hover {
+  border-color: var(--primary-300);
+  background: var(--primary-50);
+}
+
+.role-card-active {
+  border-color: var(--primary-500);
+  background: var(--primary-50);
+  box-shadow: 0 0 0 3px rgba(139,69,255,0.1);
+}
+
+.role-card-emoji {
+  font-size: var(--text-3xl);
+}
+
+.role-card h3 {
+  font-size: var(--text-base);
+}
+
+.role-card p {
+  font-size: var(--text-sm);
+  color: var(--neutral-500);
+}
+
+/* Steps */
+.register-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 200px;
+}
+
+.register-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}

@@ -1,0 +1,91 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { AppLayout } from './components/layout/AppLayout';
+
+// Public pages
+import Landing from './pages/public/Landing';
+import Login from './pages/public/Login';
+import Register from './pages/public/Register';
+
+// User pages
+import UserHome from './pages/user/UserHome';
+import SearchPage from './pages/user/Search';
+import ProfessionalProfile from './pages/user/ProfessionalProfile';
+import Booking from './pages/user/Booking';
+import Appointments from './pages/user/Appointments';
+import UserProfile from './pages/user/UserProfile';
+
+// Professional pages
+import ProDashboard from './pages/professional/ProDashboard';
+import ProWallet from './pages/professional/ProWallet';
+
+// Admin pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+
+// Shared sub-pages
+import {
+  ProBookingRequests, ProCalendar, ProEarnings, ProServices, ProPortfolio, ProProfileEditor, ProReviews,
+  AdminUsers, AdminProfessionals, AdminServices, AdminTransactions, AdminAnalytics, AdminSettings,
+  UserFavorites, UserPayments,
+} from './pages/SharedPages';
+
+import './styles/index.css';
+
+function App() {
+  return (
+    <ThemeProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <NotificationProvider>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+
+            {/* User Routes */}
+            <Route path="/user" element={<AppLayout />}>
+              <Route index element={<UserHome />} />
+              <Route path="search" element={<SearchPage />} />
+              <Route path="professional/:id" element={<ProfessionalProfile />} />
+              <Route path="booking/:id" element={<Booking />} />
+              <Route path="appointments" element={<Appointments />} />
+              <Route path="favorites" element={<UserFavorites />} />
+              <Route path="payments" element={<UserPayments />} />
+              <Route path="profile" element={<UserProfile />} />
+            </Route>
+
+            {/* Professional Routes */}
+            <Route path="/professional" element={<AppLayout />}>
+              <Route index element={<ProDashboard />} />
+              <Route path="requests" element={<ProBookingRequests />} />
+              <Route path="calendar" element={<ProCalendar />} />
+              <Route path="earnings" element={<ProEarnings />} />
+              <Route path="wallet" element={<ProWallet />} />
+              <Route path="services" element={<ProServices />} />
+              <Route path="portfolio" element={<ProPortfolio />} />
+              <Route path="reviews" element={<ProReviews />} />
+              <Route path="profile" element={<ProProfileEditor />} />
+            </Route>
+
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AppLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="professionals" element={<AdminProfessionals />} />
+              <Route path="services" element={<AdminServices />} />
+              <Route path="transactions" element={<AdminTransactions />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
+          </Routes>
+        </NotificationProvider>
+      </AuthProvider>
+    </BrowserRouter>
+    </ThemeProvider>
+  );
+}
+
+export default App;
