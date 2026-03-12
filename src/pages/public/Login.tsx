@@ -48,10 +48,10 @@ export default function Login() {
     if (!validate()) return;
 
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
-    login(role);
+    await login(role);
     notify('success', 'Welcome back!', 'You have been logged in successfully.');
     setLoading(false);
+    
     if (role === 'admin') navigate('/admin');
     else if (role === 'professional') navigate('/professional');
     else navigate('/user');

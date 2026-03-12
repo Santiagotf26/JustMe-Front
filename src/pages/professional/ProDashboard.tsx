@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
-import { Calendar, DollarSign, Star, TrendingUp, Clock, CheckCircle, Users } from 'lucide-react';
+import { Calendar, DollarSign, Star, TrendingUp, Clock, Users, AlertCircle } from 'lucide-react';
 import { Card, Avatar, Badge, Rating, Button } from '../../components/ui';
 import { mockBookings, mockReviews } from '../../data/mockData';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import './ProDashboard.css';
 
 const stats = [
@@ -12,14 +14,32 @@ const stats = [
 ];
 
 export default function ProDashboard() {
+  const { switchRole } = useAuth();
+  const navigate = useNavigate();
   const upcoming = mockBookings.filter(b => b.status === 'confirmed' || b.status === 'pending').slice(0, 3);
+  const walletBalance = 4.5; // Trigger the <$5 warning for demo purposes
 
   return (
     <div className="pro-dash">
       <div className="pro-dash-header">
-        <h1>Dashboard</h1>
-        <p className="dash-date">{new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+        <div>
+          <h1>Dashboard</h1>
+          <p className="dash-date">{new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+        </div>
+        <Button size="sm" variant="secondary" onClick={() => { switchRole('user'); navigate('/user'); }}>
+          Switch to Client Mode
+        </Button>
       </div>
+
+      {walletBalance < 5 && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="dash-alert">
+          <AlertCircle size={20} />
+          <div>
+            <strong>Low Balance Warning</strong>
+            <p>Your wallet balance is ${walletBalance.toFixed(2)}. Please recharge to stay visible in search results.</p>
+          </div>
+        </motion.div>
+      )}
 
       {/* Stats Grid */}
       <div className="dash-stats">
@@ -73,12 +93,6 @@ export default function ProDashboard() {
                   <span><Clock size={13} /> {b.time}</span>
                   <span><Calendar size={13} /> {b.date}</span>
                 </div>
-                {b.status === 'pending' && (
-                  <div className="dash-appt-actions">
-                    <Button size="sm">Accept</Button>
-                    <Button size="sm" variant="ghost">Decline</Button>
-                  </div>
-                )}
               </Card>
             ))}
           </div>

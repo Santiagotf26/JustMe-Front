@@ -9,7 +9,7 @@ import './ProWallet.css';
 export default function ProWallet() {
   const { notify } = useNotification();
   const [showRecharge, setShowRecharge] = useState(false);
-  const balance = 450;
+  const balance = -2; // Demo negative value; normally would come from context/api
   const commissionRate = 9;
 
   const handleRecharge = () => {
@@ -27,7 +27,9 @@ export default function ProWallet() {
           <div className="wallet-top">
             <div>
               <p className="wallet-label">Available Balance</p>
-              <h2 className="wallet-amount">${balance.toFixed(2)}</h2>
+              <h2 className={`wallet-amount ${balance < 0 ? 'text-red-500' : ''}`}>
+                {balance < 0 ? '-' : ''}${Math.abs(balance).toFixed(2)}
+              </h2>
             </div>
             <WalletIcon size={32} opacity={0.4} />
           </div>
@@ -40,12 +42,22 @@ export default function ProWallet() {
         </Card>
       </motion.div>
 
-      {balance < 50 && (
+      {balance <= 5 && balance >= -5 && (
         <motion.div className="low-balance-warning" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <AlertCircle size={18} />
           <div>
             <p><strong>Low balance warning</strong></p>
-            <p>Your balance is below $50. Recharge to keep appearing in search results.</p>
+            <p>Your balance is {balance < 0 ? 'negative' : `below $5.00`}. Recharge soon to keep appearing in search results.</p>
+          </div>
+        </motion.div>
+      )}
+
+      {balance < -5 && (
+        <motion.div className="low-balance-warning critical-warning" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ background: 'var(--error-100)', border: '1px solid var(--error-500)' }}>
+          <AlertCircle size={18} color="var(--error-600)" />
+          <div>
+            <p style={{ color: 'var(--error-700)' }}><strong>Account Suspended</strong></p>
+            <p style={{ color: 'var(--error-600)' }}>Your balance has dropped below -$5.00. You are currently hidden from search results. Recharge immediately to restore your visibility.</p>
           </div>
         </motion.div>
       )}
@@ -56,8 +68,16 @@ export default function ProWallet() {
           <Card variant="glass" padding="md" className="recharge-panel">
             <h3>Quick Recharge</h3>
             <div className="recharge-amounts">
-              {[25, 50, 100, 200].map(amt => (
-                <button key={amt} className="recharge-amount-btn">${amt}</button>
+              {[5, 10, 20, 50].map(amt => (
+                <button 
+                  key={amt} 
+                  className="recharge-amount-btn" 
+                  onClick={() => {
+                    setShowRecharge(false);
+                    notify('success', 'Wallet recharged', `$${amt} has been added.`);
+                  }}>
+                  ${amt}
+                </button>
               ))}
             </div>
             <div className="recharge-custom">

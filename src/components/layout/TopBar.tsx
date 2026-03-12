@@ -5,16 +5,16 @@ import { ThemeToggle } from '../ui/ThemeToggle';
 import './TopBar.css';
 
 interface TopBarProps {
-  onMenuToggle?: () => void;
+  onMenuClick?: () => void;
 }
 
-export function TopBar({ onMenuToggle }: TopBarProps) {
+export function TopBar({ onMenuClick }: TopBarProps) {
   const { user } = useAuth();
 
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <button className="topbar-menu-btn" onClick={onMenuToggle}>
+        <button className="topbar-menu-btn" onClick={onMenuClick}>
           <Menu size={22} />
         </button>
         <div className="topbar-logo-mobile">

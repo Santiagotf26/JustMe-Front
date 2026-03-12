@@ -6,3 +6,4 @@ export { Badge } from './Badge';
 export { Modal } from './Modal';
 export { Rating } from './Rating';
 export { Tabs } from './Tabs';
+export { Preloader } from './Preloader';

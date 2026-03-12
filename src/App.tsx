@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
+import { Preloader } from './components/ui';
 
 // Public pages
 import Landing from './pages/public/Landing';
@@ -16,6 +17,7 @@ import ProfessionalProfile from './pages/user/ProfessionalProfile';
 import Booking from './pages/user/Booking';
 import Appointments from './pages/user/Appointments';
 import UserProfile from './pages/user/UserProfile';
+import UserRewards from './pages/user/UserRewards';
 
 // Professional pages
 import ProDashboard from './pages/professional/ProDashboard';
@@ -30,6 +32,8 @@ import {
   AdminUsers, AdminProfessionals, AdminServices, AdminTransactions, AdminAnalytics, AdminSettings,
   UserFavorites, UserPayments,
 } from './pages/SharedPages';
+import ProSchedule from './pages/professional/ProSchedule';
+import ProAnalytics from './pages/professional/ProAnalytics';
 
 import './styles/index.css';
 
@@ -39,6 +43,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <NotificationProvider>
+          <Preloader />
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Landing />} />
@@ -54,6 +59,7 @@ function App() {
               <Route path="appointments" element={<Appointments />} />
               <Route path="favorites" element={<UserFavorites />} />
               <Route path="payments" element={<UserPayments />} />
+              <Route path="rewards" element={<UserRewards />} />
               <Route path="profile" element={<UserProfile />} />
             </Route>
 
@@ -68,6 +74,8 @@ function App() {
               <Route path="portfolio" element={<ProPortfolio />} />
               <Route path="reviews" element={<ProReviews />} />
               <Route path="profile" element={<ProProfileEditor />} />
+              <Route path="schedule" element={<ProSchedule />} />
+              <Route path="analytics" element={<ProAnalytics />} />
             </Route>
 
             {/* Admin Routes */}

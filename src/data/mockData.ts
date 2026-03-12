@@ -75,7 +75,34 @@ export interface UserProfile {
   phone: string;
   avatar: string;
   role: 'user' | 'professional' | 'admin';
+  loyaltyPoints?: number;
   addresses: { label: string; address: string }[];
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  discount: number;
+  description: string;
+  expiresAt: string;
+}
+
+export interface ScheduleConfig {
+  workingDays: Record<string, boolean>;
+  hours: { start: string; end: string };
+  breaks: { title: string; start: string; end: string }[];
+  maxDailyAppointments: number;
+  bufferMinutes: number;
+}
+
+export interface IncentiveProgram {
+  id: string;
+  title: string;
+  description: string;
+  targetServices: number;
+  currentServices: number;
+  rewardValue: number;
+  rewardType: 'bonus' | 'commission_free';
 }
 
 // Generate available slots for next 7 days
@@ -189,10 +216,31 @@ export const mockCurrentUser: UserProfile = {
   id: 'u1', name: 'Santiago Rivera', email: 'santiago@justme.com', phone: '+57 310 555 1234',
   avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop&crop=face',
   role: 'user',
+  loyaltyPoints: 350,
   addresses: [
     { label: 'Home', address: 'Calle 85 #15-23, Bogotá, Colombia' },
     { label: 'Office', address: 'Carrera 7 #71-52, Bogotá, Colombia' },
   ],
+};
+
+// Mock Coupons for UserRewards
+export const mockCoupons: Coupon[] = [
+  { id: 'c1', code: 'WELCOME15', discount: 15, description: 'Welcome to JustMe!', expiresAt: '2026-12-31' },
+  { id: 'c2', code: 'LOYALTY20', discount: 20, description: 'For reaching 300 points in our loyalty program.', expiresAt: '2026-06-30' },
+  { id: 'c3', code: 'BIRTHDAY30', discount: 30, description: 'Happy Birthday! Treat yourself to a premium service.', expiresAt: '2026-04-15' },
+];
+
+export const mockScheduleConfig: ScheduleConfig = {
+  workingDays: { Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: true, Sunday: false },
+  hours: { start: '09:00', end: '18:00' },
+  breaks: [{ title: 'Lunch Break', start: '13:00', end: '14:00' }],
+  maxDailyAppointments: 8,
+  bufferMinutes: 15,
+};
+
+export const mockIncentiveProgram: IncentiveProgram = {
+  id: 'inc1', title: 'Super Pro Status', description: 'Complete 200 services this month to unlock a $50 Wallet Bonus.',
+  targetServices: 200, currentServices: 142, rewardValue: 50, rewardType: 'bonus'
 };
 
 // Admin stats

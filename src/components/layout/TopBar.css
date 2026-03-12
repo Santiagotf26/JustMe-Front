@@ -110,6 +110,31 @@
   gap: var(--space-3);
 }
 
+.topbar-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--neutral-600);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  margin-right: var(--space-3);
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .topbar-menu-btn {
+    display: flex;
+  }
+}
+
+.topbar-menu-btn:hover {
+  background: var(--neutral-100);
+  color: var(--neutral-900);
+}
+
 .topbar-icon-btn {
   position: relative;
   display: flex;

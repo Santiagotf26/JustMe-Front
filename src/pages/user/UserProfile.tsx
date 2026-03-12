@@ -3,10 +3,12 @@ import { Camera, MapPin, Heart, CreditCard, Star, Edit3 } from 'lucide-react';
 import { Card, Avatar, Button, Badge } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { mockBookings, mockProfessionals, mockTransactions } from '../../data/mockData';
+import { useNavigate } from 'react-router-dom';
 import './UserProfile.css';
 
 export default function UserProfile() {
-  const { user } = useAuth();
+  const { user, switchRole } = useAuth();
+  const navigate = useNavigate();
   const favorites = mockProfessionals.slice(0, 3);
   const payments = mockTransactions.filter(t => t.type === 'payment').slice(0, 3);
 
@@ -30,6 +32,22 @@ export default function UserProfile() {
         <div className="stat-item"><span className="stat-val">{favorites.length}</span><span className="stat-label">Favorites</span></div>
         <div className="stat-item"><span className="stat-val">{mockBookings.filter(b => b.status === 'completed').length}</span><span className="stat-label">Reviews</span></div>
       </div>
+
+      {user?.role === 'user' && (
+        <div style={{ marginBottom: 'var(--space-4)' }} className="mt-4 mb-4">
+          <Card variant="gradient" padding="md" className="become-pro-cta">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 'var(--text-lg)', color: 'var(--neutral-0)' }}>Become a Professional</h3>
+                <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'rgba(255,255,255,0.8)' }}>Offer your services and start earning today.</p>
+              </div>
+              <Button size="sm" variant="primary" onClick={() => { switchRole('professional'); navigate('/professional'); }}>
+                Get Started
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Addresses */}
       <section className="profile-section">

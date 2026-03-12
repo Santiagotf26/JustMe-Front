@@ -5,7 +5,7 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Card, Badge, Button, Avatar, Rating } from '../components/ui';
 import { mockProfessionals, mockBookings, mockReviews, mockTransactions, serviceCategories, adminStats } from '../data/mockData';
-import { Clock, Star, Scissors, Edit, Trash2, Plus, Image, Search, Filter, CheckCircle, XCircle, DollarSign, Activity, Home, MapPin } from 'lucide-react';
+import { Home, DollarSign, Plus, Scissors, Edit, Image as ImageIcon, Trash2, Search, Filter, Activity, XCircle, Star, MapPin, CheckCircle, Clock } from 'lucide-react';
 
 const pageStyle: React.CSSProperties = { padding: 'var(--space-4)', maxWidth: '960px', margin: '0 auto' };
 const headerStyle: React.CSSProperties = { fontSize: 'var(--text-2xl)', fontFamily: 'var(--font-display)', fontWeight: 700, marginBottom: 'var(--space-5)' };
@@ -36,12 +36,11 @@ export function ProBookingRequests() {
                   <Badge variant={b.status === 'confirmed' ? 'success' : 'warning'}>{b.status}</Badge>
                 </div>
               </div>
-              {b.status === 'pending' && (
-                <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-3)', justifyContent: 'flex-end' }}>
-                  <Button size="sm">Accept</Button>
-                  <Button size="sm" variant="danger">Decline</Button>
-                </div>
-              )}
+              <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-3)', justifyContent: 'flex-end', alignItems: 'center' }}>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-500)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <CheckCircle size={14} color="var(--success-500)" /> Auto-confirmed by schedule
+                </span>
+              </div>
             </Card>
           </motion.div>
         ))}
@@ -183,7 +182,7 @@ export function ProPortfolio() {
               cursor: 'pointer',
             }}
           >
-            <Image size={28} />
+            <ImageIcon size={28} />
             <div style={{ position: 'absolute', top: 8, right: 8 }}>
               <Button size="sm" variant="ghost" icon={<Trash2 size={14} />} />
             </div>

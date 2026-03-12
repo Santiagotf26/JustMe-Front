@@ -1,10 +1,11 @@
+
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Scissors, Sparkles, Star, Hand, Droplets, Heart, Waves, User,
   MapPin, Home, Building, Calendar, Clock, Search as SearchIcon,
-  ArrowLeft, ArrowRight, Check, X, ChevronDown, ChevronUp,
+  ArrowLeft, Check, ChevronDown, ChevronUp,
   Loader2, CheckCircle, Navigation
 } from 'lucide-react';
 import { MapView } from '../../components/map/MapView';
@@ -16,7 +17,7 @@ import './Search.css';
 
 type Phase = 'choose' | 'searching' | 'results' | 'profile' | 'confirmed';
 
-const serviceIcons: Record<string, JSX.Element> = {
+const serviceIcons: Record<string, any> = {
   'Barber': <Scissors size={22} />,
   'Hair Stylist': <Sparkles size={22} />,
   'Makeup': <Star size={22} />,

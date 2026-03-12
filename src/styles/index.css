@@ -312,7 +312,7 @@ ul, ol { list-style: none; }
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, var(--primary-500), var(--accent-500));
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
