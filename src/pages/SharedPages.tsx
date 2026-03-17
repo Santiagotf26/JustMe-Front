@@ -1,11 +1,13 @@
 // Shared stub pages for secondary views across all roles
 // These provide functional UI placeholder content with real component usage
-
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Card, Badge, Button, Avatar, Rating } from '../components/ui';
 import { mockProfessionals, mockBookings, mockReviews, mockTransactions, serviceCategories, adminStats } from '../data/mockData';
 import { Home, DollarSign, Plus, Scissors, Edit, Image as ImageIcon, Trash2, Search, Filter, Activity, XCircle, Star, MapPin, CheckCircle, Clock } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { bookingService } from '../services/bookingService';
+import { professionalsService } from '../services/professionalsService';
 
 const pageStyle: React.CSSProperties = { padding: 'var(--space-4)', maxWidth: '960px', margin: '0 auto' };
 const headerStyle: React.CSSProperties = { fontSize: 'var(--text-2xl)', fontFamily: 'var(--font-display)', fontWeight: 700, marginBottom: 'var(--space-5)' };
@@ -17,7 +19,16 @@ const subStyle: React.CSSProperties = { fontSize: 'var(--text-xs)', color: 'var(
 /* ============== PROFESSIONAL PAGES ============== */
 
 export function ProBookingRequests() {
-  const requests = mockBookings.filter(b => b.status === 'pending' || b.status === 'confirmed');
+  const [requests, setRequests] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    bookingService.getProfessionalBookings()
+      .then(data => setRequests(data.filter((b: any) => b.status === 'pending' || b.status === 'confirmed')))
+      .catch(e => {
+        console.warn("Failed to fetch pro bookings", e);
+        setRequests(mockBookings.filter(b => b.status === 'pending' || b.status === 'confirmed'));
+      });
+  }, []);
   return (
     <div style={pageStyle}>
       <h1 style={headerStyle}>Booking Requests</h1>
@@ -194,22 +205,73 @@ export function ProPortfolio() {
 }
 
 export function ProProfileEditor() {
+  const { user } = useAuth();
+  const [formData, setFormData] = React.useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    bio: '',
+    address: '',
+    serviceRadius: 5
+  });
+
+  React.useEffect(() => {
+    if (user?.id) {
+       professionalsService.getProfessionalById(user.id).then(data => {
+         if (data) {
+           setFormData(prev => ({
+             ...prev,
+             bio: data.bio || prev.bio,
+             address: data.location?.address || prev.address,
+             serviceRadius: data.serviceRadius || prev.serviceRadius
+           }));
+         }
+       }).catch(console.warn);
+    }
+  }, [user?.id]);
+
+  const handleSave = async () => {
+    if (!user?.id) return;
+    try {
+      await professionalsService.updateProfile(user.id, formData);
+      alert('Profile saved successfully');
+    } catch (e) {
+      alert('Failed to save profile');
+    }
+  };
+
   return (
     <div style={pageStyle}>
       <h1 style={headerStyle}>Edit Profile</h1>
       <Card variant="default" padding="lg">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          {['Full Name', 'Bio', 'Phone', 'Email', 'Address', 'Service Radius (km)'].map(f => (
-            <div key={f}>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>{f}</label>
-              {f === 'Bio' ? (
-                <textarea rows={3} style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none', fontFamily: 'var(--font-body)', resize: 'vertical' }} />
-              ) : (
-                <input type="text" style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none' }} />
-              )}
-            </div>
-          ))}
-          <Button>Save Changes</Button>
+          {/* Form fields mapped to state */}
+          <div>
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Full Name</label>
+            <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Bio</label>
+            <textarea value={formData.bio} onChange={e => setFormData({ ...formData, bio: e.target.value })} rows={3} style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none', fontFamily: 'var(--font-body)', resize: 'vertical' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Phone</label>
+            <input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Email</label>
+            <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Address</label>
+            <input type="text" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Service Radius (km)</label>
+            <input type="number" value={formData.serviceRadius} onChange={e => setFormData({ ...formData, serviceRadius: parseInt(e.target.value) || 0 })} style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none' }} />
+          </div>
+
+          <Button onClick={handleSave}>Save Changes</Button>
         </div>
       </Card>
     </div>

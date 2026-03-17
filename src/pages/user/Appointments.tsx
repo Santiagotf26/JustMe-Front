@@ -1,14 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, MapPin } from 'lucide-react';
 import { Tabs, Card, Avatar, Badge, Button } from '../../components/ui';
 import { mockBookings } from '../../data/mockData';
+import { bookingService } from '../../services/bookingService';
 import './Appointments.css';
 
 export default function Appointments() {
   const [activeTab, setActiveTab] = useState('upcoming');
-  const upcoming = mockBookings.filter(b => b.status === 'pending' || b.status === 'confirmed');
-  const past = mockBookings.filter(b => b.status === 'completed' || b.status === 'cancelled');
+  const [appointments, setAppointments] = useState<any[]>(mockBookings);
+
+  useEffect(() => {
+    bookingService.getUserBookings()
+      .then(data => setAppointments(data))
+      .catch(console.warn);
+  }, []);
+
+  const upcoming = appointments.filter(b => b.status === 'pending' || b.status === 'confirmed');
+  const past = appointments.filter(b => b.status === 'completed' || b.status === 'cancelled');
   const list = activeTab === 'upcoming' ? upcoming : past;
 
   const statusColors: Record<string, 'primary' | 'success' | 'warning' | 'error'> = {

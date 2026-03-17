@@ -3,14 +3,16 @@ import { Gift, Copy, CheckCircle, Star } from 'lucide-react';
 import { useState } from 'react';
 import { Card, Button, Badge } from '../../components/ui';
 import { useNotification } from '../../context/NotificationContext';
-import { mockCoupons, mockCurrentUser, type Coupon } from '../../data/mockData';
+import { useAuth } from '../../context/AuthContext';
+import { mockCoupons, type Coupon } from '../../data/mockData';
 import './UserRewards.css';
 
 export default function UserRewards() {
   const { notify } = useNotification();
+  const { user } = useAuth();
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   
-  const points = mockCurrentUser.loyaltyPoints || 350;
+  const points = (user as any)?.loyaltyPoints || 350;
   const nextMilestone = 500;
   const progressPercent = Math.min((points / nextMilestone) * 100, 100);
 

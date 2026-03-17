@@ -1,12 +1,24 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { mockCurrentUser, type UserProfile } from '../data/mockData';
+import { authService, type LoginCredentials, type RegisterData } from '../services/authService';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: 'user' | 'professional' | 'admin';
+  photoUrl?: string;
+  phone?: string;
+  avatar?: string;
+  addresses?: { id: string; title: string; current?: boolean; address: string }[];
+}
 
 interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
   role: 'user' | 'professional' | 'admin' | null;
   isLoggingIn: boolean;
-  login: (role: 'user' | 'professional' | 'admin') => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   switchRole: (role: 'user' | 'professional' | 'admin') => void;
 }
@@ -18,30 +30,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<'user' | 'professional' | 'admin' | null>(() => {
     return (localStorage.getItem('justme_role') as any) || null;
   });
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(true); // start true for initial profile fetch
 
-  // Automatically log in using the persisted role if available
+  // Automatically fetch user profile if token exists
   useEffect(() => {
-    const savedRole = localStorage.getItem('justme_role') as any;
-    if (savedRole) {
-      setUser({ ...mockCurrentUser, role: savedRole });
-    }
+    const initAuth = async () => {
+      const token = localStorage.getItem('justme_token');
+      if (token) {
+        try {
+          const profile = await authService.getProfile();
+          setUser(profile);
+          setRole(profile.role);
+          localStorage.setItem('justme_role', profile.role);
+        } catch (error) {
+          console.error("Failed to fetch profile automatically", error);
+          logout();
+        }
+      }
+      setIsLoggingIn(false);
+    };
+
+    initAuth();
+
+    // Listen for unauthorized events from axios interceptor
+    const handleUnauthorized = () => logout();
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, []);
 
-  const login = async (selectedRole: 'user' | 'professional' | 'admin') => {
+  const login = async (credentials: LoginCredentials) => {
     setIsLoggingIn(true);
-    // Simulate API delay and preloader display time
-    await new Promise(resolve => setTimeout(resolve, 2500));
-    
-    setUser({ ...mockCurrentUser, role: selectedRole });
-    setRole(selectedRole);
-    localStorage.setItem('justme_role', selectedRole);
-    setIsLoggingIn(false);
+    try {
+      const response = await authService.login(credentials);
+      localStorage.setItem('justme_token', response.token);
+      localStorage.setItem('justme_role', response.user.role);
+      setUser(response.user as UserProfile);
+      setRole(response.user.role);
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const register = async (data: RegisterData) => {
+    setIsLoggingIn(true);
+    try {
+      const response = await authService.register(data);
+      localStorage.setItem('justme_token', response.token);
+      localStorage.setItem('justme_role', response.user.role);
+      setUser(response.user as UserProfile);
+      setRole(response.user.role);
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   const logout = () => {
     setUser(null);
     setRole(null);
+    localStorage.removeItem('justme_token');
     localStorage.removeItem('justme_role');
   };
 
@@ -54,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, role, isLoggingIn, login, logout, switchRole }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, role, isLoggingIn, login, register, logout, switchRole }}>
       {children}
     </AuthContext.Provider>
   );

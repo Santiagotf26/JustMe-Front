@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { BottomNav } from './BottomNav';
+import { useAuth } from '../../context/AuthContext';
 import './AppLayout.css';
 
 const pageVariants = {
@@ -14,7 +15,23 @@ const pageVariants = {
 
 export function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { isAuthenticated, isLoggingIn } = useAuth();
+
+  useEffect(() => {
+    if (!isLoggingIn && !isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isLoggingIn, isAuthenticated, navigate]);
+
+  if (isLoggingIn) {
+    return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="app-layout">

@@ -1,16 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Wallet as WalletIcon, TrendingUp, AlertCircle, CreditCard, Plus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { Card, Button, Badge } from '../../components/ui';
 import { mockTransactions } from '../../data/mockData';
+import { walletService } from '../../services/walletService';
 import { useNotification } from '../../context/NotificationContext';
 import './ProWallet.css';
 
 export default function ProWallet() {
   const { notify } = useNotification();
   const [showRecharge, setShowRecharge] = useState(false);
-  const balance = -2; // Demo negative value; normally would come from context/api
+  const [balance, setBalance] = useState(-2);
+  const [transactions, setTransactions] = useState<any[]>(mockTransactions);
   const commissionRate = 9;
+
+  useEffect(() => {
+    walletService.getBalance()
+      .then(res => setBalance(res.balance))
+      .catch((e) => console.warn('Failed to fetch balance', e));
+
+    walletService.getTransactions()
+      .then(data => setTransactions(data))
+      .catch((e) => console.warn('Failed to fetch txns', e));
+  }, []);
 
   const handleRecharge = () => {
     setShowRecharge(false);
@@ -104,7 +116,7 @@ export default function ProWallet() {
       <section className="wallet-section">
         <h2>Transaction History</h2>
         <div className="txn-list">
-          {mockTransactions.map((t, i) => (
+          {transactions.map((t: any, i: number) => (
             <motion.div key={t.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card variant="default" padding="sm" className="txn-card">
                 <div className={`txn-icon ${t.type === 'recharge' || t.type === 'payment' ? 'txn-in' : 'txn-out'}`}>

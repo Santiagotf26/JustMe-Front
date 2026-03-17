@@ -9,9 +9,11 @@ import {
   Loader2, CheckCircle, Navigation
 } from 'lucide-react';
 import { MapView } from '../../components/map/MapView';
-import { mockProfessionals } from '../../data/mockData';
 import { useGeolocation } from '../../hooks';
 import { calculateDistance } from '../../services/geolocation';
+import { professionalsService } from '../../services/professionalsService';
+import { bookingService } from '../../services/bookingService';
+import { paymentsService } from '../../services/paymentsService';
 import { useNotification } from '../../context/NotificationContext';
 import './Search.css';
 
@@ -73,30 +75,43 @@ export default function SearchPage() {
     };
   }), []);
 
-  // Professionals with distance
-  const prosWithDistance = useMemo(() => mockProfessionals.map(p => ({
-    ...p,
-    distance: geo.latitude && geo.longitude
-      ? calculateDistance(geo.latitude, geo.longitude, p.location.lat, p.location.lng)
-      : p.distance,
-  })), [geo.latitude, geo.longitude]);
+  const [backendPros, setBackendPros] = useState<any[]>([]);
+  const [loadingPros, setLoadingPros] = useState(false);
+
+  // Fetch real professionals dynamically when geo changes
+  useMemo(() => {
+    if (geo.latitude && geo.longitude) {
+      setLoadingPros(true);
+      professionalsService.getNearbyProfessionals({ latitude: geo.latitude, longitude: geo.longitude, radius: 5 })
+        .then(data => {
+          // Temporarily attach distance locally until backend fully calculates it
+          const withDist = data.map((p: any) => ({
+            ...p,
+            distance: calculateDistance(geo.latitude!, geo.longitude!, p.location.lat, p.location.lng)
+          }));
+          setBackendPros(withDist);
+        })
+        .catch(e => console.warn('Failed to fetch nearby pros', e))
+        .finally(() => setLoadingPros(false));
+    }
+  }, [geo.latitude, geo.longitude]);
 
   // Filter by service and 5km
   const filtered = useMemo(() => {
-    return prosWithDistance
+    return backendPros
       .filter(p => selectedService === '' || p.services.includes(selectedService))
       .filter(p => p.distance <= 5)
-      .sort((a, b) => {
+      .sort((a: any, b: any) => {
         // Favorites first
         if (a.isFavorite && !b.isFavorite) return -1;
         if (!a.isFavorite && b.isFavorite) return 1;
         return a.distance - b.distance;
       });
-  }, [prosWithDistance, selectedService]);
+  }, [backendPros, selectedService]);
 
   const favorites = filtered.filter(p => p.isFavorite);
   const nearby = filtered.filter(p => !p.isFavorite);
-  const selectedPro = prosWithDistance.find(p => p.id === selectedProId);
+  const selectedPro = backendPros.find(p => p.id === selectedProId);
 
   const canSearch = selectedService && selectedDate && selectedTime;
 
@@ -114,11 +129,31 @@ export default function SearchPage() {
   };
 
   const handleConfirmBooking = async () => {
+    if (!selectedPro) return;
     setBookingLoading(true);
-    await new Promise(r => setTimeout(r, 2000));
-    setBookingLoading(false);
-    setPhase('confirmed');
-    notify('success', 'Booking confirmed!', `Your appointment with ${selectedPro?.name} has been scheduled.`);
+    try {
+      const booking = await bookingService.createBooking({
+        professionalId: selectedPro.id,
+        serviceName: selectedService,
+        date: selectedDate,
+        time: selectedTime,
+        price: selectedPro.price
+      });
+      
+      const payment = await paymentsService.createPayment({
+        bookingId: booking.id,
+        amount: selectedPro.price
+      });
+      
+      notify('success', 'Booking confirmed!', `Redirecting to payment via MercadoPago...`);
+      setTimeout(() => {
+        window.location.href = payment.init_point;
+      }, 1500);
+      
+    } catch (e) {
+      setBookingLoading(false);
+      notify('error', 'Booking failed', 'Failed to secure your appointment.');
+    }
   };
 
   const handleReset = () => {
@@ -150,7 +185,7 @@ export default function SearchPage() {
           professionals={mapPros}
           userLocation={geo.latitude && geo.longitude ? { lat: geo.latitude, lng: geo.longitude } : null}
           onProfessionalClick={handleSelectPro}
-          loading={geo.loading}
+          loading={geo.loading || loadingPros}
           variant="fullscreen"
           selectedId={selectedProId}
           zoom={mapZoom}
@@ -389,7 +424,7 @@ export default function SearchPage() {
                           <span className="uber-pro-avail">{pro.availability}</span>
                         </div>
                         <div className="uber-pro-tags">
-                          {pro.services.slice(0, 2).map(s => <span key={s}>{s}</span>)}
+                          {pro.services?.slice(0, 2).map((s: string) => <span key={s}>{s}</span>)}
                         </div>
                       </div>
                       <div className="uber-pro-price">${pro.price}</div>
@@ -457,7 +492,7 @@ export default function SearchPage() {
                 <div className="uber-avail-section">
                   <h3><Calendar size={16} /> Available Slots</h3>
                   <div className="uber-avail-calendar">
-                    {selectedPro.availableSlots.slice(0, 5).map(day => {
+                    {selectedPro.availableSlots?.slice(0, 5).map((day: any) => {
                       const dayDate = new Date(day.date);
                       const isSelectedDay = selectedDate === day.date;
                       return (
@@ -467,7 +502,7 @@ export default function SearchPage() {
                             <span className="uber-avail-date">{dayDate.toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span>
                           </div>
                           <div className="uber-avail-slots">
-                            {day.slots.map(slot => (
+                            {day.slots.map((slot: string) => (
                               <button
                                 key={`${day.date}-${slot}`}
                                 className={`uber-slot-btn ${bookingSlot === `${day.date}-${slot}` ? 'uber-slot-active' : ''}`}

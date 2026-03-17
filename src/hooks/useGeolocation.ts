@@ -31,14 +31,14 @@ export function useGeolocation() {
     }
 
     const timeout = setTimeout(() => {
-      // Fallback if geolocation takes too long
+      // Fallback if user takes too long to accept or connection drops
       setState(prev => {
         if (prev.loading) {
-          return { latitude: DEFAULT_LAT, longitude: DEFAULT_LNG, loading: false, error: 'Timeout — using default location' };
+          return { latitude: DEFAULT_LAT, longitude: DEFAULT_LNG, loading: false, error: 'Location request timed out — using default' };
         }
         return prev;
       });
-    }, 5000);
+    }, 15000); // Give user 15 seconds to accept browser prompt
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -59,7 +59,7 @@ export function useGeolocation() {
           error: err.message,
         });
       },
-      { enableHighAccuracy: false, timeout: 4000, maximumAge: 600000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } // Require fresh, highly accurate location
     );
 
     return () => clearTimeout(timeout);

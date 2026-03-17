@@ -48,13 +48,17 @@ export default function Login() {
     if (!validate()) return;
 
     setLoading(true);
-    await login(role);
-    notify('success', 'Welcome back!', 'You have been logged in successfully.');
-    setLoading(false);
-    
-    if (role === 'admin') navigate('/admin');
-    else if (role === 'professional') navigate('/professional');
-    else navigate('/user');
+    try {
+      await login({ email, password });
+      notify('success', 'Welcome back!', 'You have been logged in successfully.');
+      if (role === 'admin') navigate('/admin');
+      else if (role === 'professional') navigate('/professional');
+      else navigate('/user');
+    } catch (err: any) {
+      notify('error', 'Login failed', err.response?.data?.message || 'Invalid credentials.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

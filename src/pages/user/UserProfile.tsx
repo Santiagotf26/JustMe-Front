@@ -52,9 +52,9 @@ export default function UserProfile() {
       {/* Addresses */}
       <section className="profile-section">
         <h2><MapPin size={18} /> Saved Addresses</h2>
-        {user?.addresses.map((addr, i) => (
+        {user?.addresses?.map((addr: any, i: number) => (
           <Card key={i} variant="default" padding="sm" className="addr-card">
-            <Badge variant="primary" size="sm">{addr.label}</Badge>
+            <Badge variant="primary" size="sm">{addr.label || addr.title || 'Address'}</Badge>
             <p>{addr.address}</p>
           </Card>
         ))}

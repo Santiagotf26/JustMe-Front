@@ -13,7 +13,7 @@ const steps = ['Account Type', 'Basic Info', 'Credentials'];
 
 export default function Register() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { register } = useAuth();
   const { notify } = useNotification();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -80,11 +80,21 @@ export default function Register() {
     if (step < 2) { setStep(step + 1); return; }
 
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
-    login(role);
-    notify('success', 'Account created!', 'Welcome to JustMe. Let\'s get started.');
-    setLoading(false);
-    navigate(role === 'professional' ? '/professional' : '/user');
+    try {
+      await register({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        phone: form.phone,
+        role: role
+      });
+      notify('success', 'Account created!', 'Welcome to JustMe. Let\'s get started.');
+      navigate(role === 'professional' ? '/professional' : '/user');
+    } catch (err: any) {
+      notify('error', 'Registration failed', err.response?.data?.message || 'Failed to create account.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const pwdStrength = getPasswordStrength(form.password);

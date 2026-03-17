@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { motion } from 'framer-motion';
 import { Star, MapPin, Navigation, Heart } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 import 'leaflet/dist/leaflet.css';
 import './MapView.css';
 
@@ -26,7 +27,7 @@ const createMarkerIcon = (type: 'user' | 'pro' | 'favorite' | 'selected') => {
   const isFav = type === 'favorite';
   const isSelected = type === 'selected';
   const size = isSelected ? 20 : 16;
-  const color = '#dc2626';
+  const color = '#ef4444'; // var(--primary-500)
   const ring = isFav ? `border: 3px solid #fbbf24; box-shadow: 0 2px 12px ${color}66, 0 0 16px #fbbf2444;` :
                 isSelected ? `border: 3px solid white; box-shadow: 0 4px 20px ${color}88, 0 0 30px ${color}44;` :
                 `border: 3px solid white; box-shadow: 0 2px 12px ${color}66, 0 0 24px ${color}33;`;
@@ -82,6 +83,7 @@ function RecenterMap({ lat, lng, zoom }: { lat: number; lng: number; zoom?: numb
 export function MapView({ professionals, userLocation, onProfessionalClick, loading, variant = 'default', selectedId, zoom, center }: MapViewProps) {
   const mapRef = useRef<any>(null);
   const mapCenter = center || userLocation || { lat: 4.711, lng: -74.0721 };
+  const { isDark } = useTheme();
 
   if (loading) {
     return (
@@ -108,8 +110,12 @@ export function MapView({ professionals, userLocation, onProfessionalClick, load
         zoomControl={false}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          key={isDark ? 'dark' : 'light'}
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url={isDark 
+            ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          }
         />
 
         <RecenterMap lat={mapCenter.lat} lng={mapCenter.lng} zoom={zoom} />
