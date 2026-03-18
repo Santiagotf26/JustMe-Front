@@ -7,9 +7,9 @@ interface GeolocationState {
   error: string | null;
 }
 
-// Default to Bogotá, Colombia
-const DEFAULT_LAT = 4.711;
-const DEFAULT_LNG = -74.0721;
+// Default to Duitama, Boyacá (User Preference)
+const DEFAULT_LAT = 5.8268;
+const DEFAULT_LNG = -73.0331;
 
 export function useGeolocation() {
   const [state, setState] = useState<GeolocationState>({

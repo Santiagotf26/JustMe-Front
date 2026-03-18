@@ -81,26 +81,51 @@ export default function SearchPage() {
   // Fetch real professionals dynamically when geo changes
   useMemo(() => {
     if (geo.latitude && geo.longitude) {
-      setLoadingPros(true);
-      professionalsService.getNearbyProfessionals({ latitude: geo.latitude, longitude: geo.longitude, radius: 5 })
+      professionalsService.getNearbyProfessionals({ latitude: geo.latitude, longitude: geo.longitude, radius: 20 })
         .then(data => {
-          // Temporarily attach distance locally until backend fully calculates it
-          const withDist = data.map((p: any) => ({
-            ...p,
-            distance: calculateDistance(geo.latitude!, geo.longitude!, p.location.lat, p.location.lng)
-          }));
-          setBackendPros(withDist);
+          // Map backend structure to frontend structure
+          const mapped = data.map((p: any) => {
+            const lat = Number(p.latitude);
+            const lng = Number(p.longitude);
+            // Collect all service categories and names for filtering
+            const services = p.professionalServices?.map((ps: any) => ps.service?.category) || [];
+            const serviceNames = p.professionalServices?.map((ps: any) => ps.service?.name) || [];
+            
+            return {
+              ...p,
+              name: p.user?.name || 'Professional',
+              avatar: p.user?.avatar || `https://ui-avatars.com/api/?name=${p.user?.name || 'P'}&background=random`,
+              location: { lat, lng, address: p.address },
+              services: [...new Set([...services, ...serviceNames])],
+              price: p.professionalServices?.[0]?.price || 0,
+              distance: calculateDistance(geo.latitude!, geo.longitude!, lat, lng)
+            };
+          });
+          setBackendPros(mapped);
         })
         .catch(e => console.warn('Failed to fetch nearby pros', e))
         .finally(() => setLoadingPros(false));
     }
   }, [geo.latitude, geo.longitude]);
 
-  // Filter by service and 5km
+  // Map UI categories to backend keywords
+  const categoryMapping: Record<string, string[]> = {
+    'Barber': ['Barbería', 'Corte', 'Barbero'],
+    'Hair Stylist': ['Peluquería', 'Cabello', 'Peinado'],
+    'Nails': ['Nails', 'Manicura', 'Pedicura', 'Uñas'],
+    'Massage': ['Masaje', 'Bienestar', 'Relax'],
+    'Makeup': ['Maquillaje', 'Makeup', 'Social'],
+  };
+
+  // Filter by service and 50km radius for better testability
   const filtered = useMemo(() => {
     return backendPros
-      .filter(p => selectedService === '' || p.services.includes(selectedService))
-      .filter(p => p.distance <= 5)
+      .filter(p => {
+        if (selectedService === '') return true;
+        const keywords = categoryMapping[selectedService] || [selectedService];
+        return keywords.some(key => p.services.some((s: string) => s.toLowerCase().includes(key.toLowerCase())));
+      })
+      .filter(p => p.distance <= 50)
       .sort((a: any, b: any) => {
         // Favorites first
         if (a.isFavorite && !b.isFavorite) return -1;
@@ -141,8 +166,8 @@ export default function SearchPage() {
       });
       
       const payment = await paymentsService.createPayment({
-        bookingId: booking.id,
-        amount: selectedPro.price
+        amount: selectedPro.price,
+        metadata: { bookingId: booking.id }
       });
       
       notify('success', 'Booking confirmed!', `Redirecting to payment via MercadoPago...`);
