@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { authService, type LoginCredentials, type RegisterData } from '../services/authService';
+import { verificationService, type VerificationStatus } from '../services/verificationService';
+import { professionalsService } from '../services/professionalsService';
 
 export interface UserProfile {
   id: string | number;
@@ -19,10 +21,14 @@ interface AuthContextType {
   isAuthenticated: boolean;
   role: 'user' | 'professional' | 'admin' | null;
   isLoggingIn: boolean;
+  verificationStatus: VerificationStatus['status'];
+  professionalId: string | null; // The ID from the professionals table
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   switchRole: (role: 'user' | 'professional' | 'admin') => void;
+  refreshVerificationStatus: () => Promise<void>;
+  setUser: (user: UserProfile | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -32,7 +38,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<'user' | 'professional' | 'admin' | null>(() => {
     return (localStorage.getItem('justme_role') as any) || null;
   });
-  const [isLoggingIn, setIsLoggingIn] = useState(true); // start true for initial profile fetch
+  const [isLoggingIn, setIsLoggingIn] = useState(true);
+  const [vStatus, setVStatus] = useState<VerificationStatus['status']>('none');
+  const [professionalId, setProfessionalId] = useState<string | null>(null);
+
+  const refreshVerificationStatus = async () => {
+    try {
+      const result = await verificationService.getVerificationStatus();
+      setVStatus(result.status);
+    } catch {
+      setVStatus('none');
+    }
+  };
+
+  /**
+   * Resolve the professional profile ID from the user ID.
+   * The professionals table has its own auto-increment IDs separate from users.
+   */
+  const resolveProfessionalId = async (userId: string | number) => {
+    try {
+      const proProfile = await professionalsService.getProfessionalByUserId(String(userId));
+      if (proProfile?.id) {
+        const pid = String(proProfile.id);
+        setProfessionalId(pid);
+        localStorage.setItem('justme_professional_id', pid);
+        return pid;
+      }
+    } catch {
+      // Professional profile doesn't exist yet
+    }
+    setProfessionalId(null);
+    localStorage.removeItem('justme_professional_id');
+    return null;
+  };
 
   // Automatically fetch user profile if token exists
   useEffect(() => {
@@ -45,6 +83,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser({ ...profile, role: userRole });
           setRole(userRole as any);
           localStorage.setItem('justme_role', userRole);
+
+          // Fetch verification status and professional ID
+          if (userRole === 'professional') {
+            await refreshVerificationStatus();
+            await resolveProfessionalId(profile.id);
+          } else {
+            // Even users might have applied to be a professional
+            const cachedPid = localStorage.getItem('justme_professional_id');
+            if (cachedPid) setProfessionalId(cachedPid);
+          }
         } catch (error) {
           console.error("Failed to fetch profile automatically", error);
           logout();
@@ -55,7 +103,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initAuth();
 
-    // Listen for unauthorized events from axios interceptor
     const handleUnauthorized = () => logout();
     window.addEventListener('auth:unauthorized', handleUnauthorized);
     return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
@@ -74,6 +121,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('justme_role', userRole);
       setUser({ ...response.user, role: userRole } as unknown as UserProfile);
       setRole(userRole as any);
+
+      if (userRole === 'professional') {
+        await refreshVerificationStatus();
+        await resolveProfessionalId(response.user.id);
+      }
     } catch (error) {
       console.error('Login error in context:', error);
       throw error;
@@ -106,8 +158,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null);
     setRole(null);
+    setVStatus('none');
+    setProfessionalId(null);
     localStorage.removeItem('justme_token');
     localStorage.removeItem('justme_role');
+    localStorage.removeItem('justme_professional_id');
   };
 
   const switchRole = (newRole: 'user' | 'professional' | 'admin') => {
@@ -115,11 +170,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser({ ...user, roles: [{ id: 0, name: newRole }] });
       setRole(newRole);
       localStorage.setItem('justme_role', newRole);
+      if (newRole === 'professional' && !professionalId) {
+        resolveProfessionalId(user.id);
+      }
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, role, isLoggingIn, login, register, logout, switchRole }}>
+    <AuthContext.Provider value={{
+      user, isAuthenticated: !!user, role, isLoggingIn,
+      verificationStatus: vStatus,
+      professionalId,
+      login, register, logout, switchRole,
+      refreshVerificationStatus, setUser,
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MapPin, Search, ChevronRight, Scissors, Sparkles, Star, Hand, Heart, Droplets, Waves, User } from 'lucide-react';
+import { MapPin, Search, ChevronRight, Scissors, Sparkles, Star, Hand, Heart, Droplets, Waves, User, Loader } from 'lucide-react';
 import { Card, Button, Avatar, Rating } from '../../components/ui';
-import { mockProfessionals } from '../../data/mockData';
+import { professionalsService } from '../../services/professionalsService';
+import { useGeolocation } from '../../hooks';
 import './UserHome.css';
 
 const categories = [
@@ -19,9 +20,39 @@ const categories = [
 
 export default function UserHome() {
   const navigate = useNavigate();
+  const geo = useGeolocation();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [topPros, setTopPros] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const topPros = mockProfessionals.slice(0, 4);
+  useEffect(() => {
+    const fetchPros = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const lat = geo.latitude || 4.711;
+        const lng = geo.longitude || -74.0721;
+        const data = await professionalsService.getNearbyProfessionals({
+          latitude: lat,
+          longitude: lng,
+          radius: 10,
+        });
+        const list = Array.isArray(data) ? data : (data?.data || []);
+        setTopPros(list.slice(0, 4));
+      } catch (err: any) {
+        console.warn('Failed to fetch top professionals', err);
+        setError('No se pudieron cargar los profesionales');
+        setTopPros([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!geo.loading) {
+      fetchPros();
+    }
+  }, [geo.loading, geo.latitude, geo.longitude]);
 
   return (
     <div className="user-home">
@@ -30,7 +61,7 @@ export default function UserHome() {
         <MapPin size={18} className="location-pin" />
         <div className="location-text">
           <span className="location-label">Your location</span>
-          <span className="location-address">Bogotá, Cundinamarca, Colombia</span>
+          <span className="location-address">{geo.error ? 'Bogotá, Colombia (default)' : 'Your current location'}</span>
         </div>
         <button className="location-change">Change</button>
       </motion.div>
@@ -86,29 +117,51 @@ export default function UserHome() {
           <h2>Top Professionals</h2>
           <button className="see-all" onClick={() => navigate('/user/search')}>See all <ChevronRight size={16} /></button>
         </div>
-        <div className="pros-scroll">
-          {topPros.map((pro, i) => (
-            <motion.div
-              key={pro.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 + i * 0.1 }}
-            >
-              <Card variant="glass" hover className="pro-card-home" onClick={() => navigate(`/user/professional/${pro.id}`)}>
-                <Avatar src={pro.avatar} name={pro.name} size="lg" />
-                <h3>{pro.name}</h3>
-                <Rating value={pro.rating} size="sm" showValue count={pro.reviewCount} />
-                <div className="pro-card-tags">
-                  {pro.services.slice(0, 2).map(s => <span key={s} className="pro-tag">{s}</span>)}
-                </div>
-                <div className="pro-card-meta">
-                  <span className="pro-distance"><MapPin size={13} /> {pro.distance} km</span>
-                  <span className="pro-price">from ${pro.price}</span>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+            <Loader size={28} style={{ animation: 'spin 0.8s linear infinite', color: 'var(--primary-500)' }} />
+          </div>
+        ) : error ? (
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--neutral-400)' }}>
+            <p>{error}</p>
+            <Button size="sm" variant="ghost" onClick={() => window.location.reload()}>Retry</Button>
+          </div>
+        ) : topPros.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--neutral-400)' }}>
+            <User size={40} style={{ marginBottom: '8px', opacity: 0.4 }} />
+            <p>No professionals found nearby</p>
+            <Button size="sm" variant="ghost" onClick={() => navigate('/user/search')}>Search wider area</Button>
+          </div>
+        ) : (
+          <div className="pros-scroll">
+            {topPros.map((pro: any, i: number) => (
+              <motion.div
+                key={pro.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 + i * 0.1 }}
+              >
+                <Card variant="glass" hover className="pro-card-home" onClick={() => navigate(`/user/professional/${pro.id}`)}>
+                  <Avatar src={pro.avatar || pro.photoUrl || pro.user?.avatar} name={pro.name || pro.user?.name || 'Professional'} size="lg" />
+                  <h3>{pro.name || pro.user?.name || 'Professional'}</h3>
+                  <Rating value={pro.rating || 0} size="sm" showValue count={pro.reviewCount || 0} />
+                  <div className="pro-card-tags">
+                    {(pro.services || []).slice(0, 2).map((s: any) => (
+                      <span key={typeof s === 'string' ? s : s.name} className="pro-tag">
+                        {typeof s === 'string' ? s : s.name}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="pro-card-meta">
+                    <span className="pro-distance"><MapPin size={13} /> {(pro.distance || 0).toFixed(1)} km</span>
+                    <span className="pro-price">from ${pro.price || pro.services?.[0]?.price || 0}</span>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

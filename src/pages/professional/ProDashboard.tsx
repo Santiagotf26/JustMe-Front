@@ -1,26 +1,82 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, DollarSign, Star, TrendingUp, Clock, Users, AlertCircle } from 'lucide-react';
+import { Calendar, DollarSign, Star, TrendingUp, Clock, Users, AlertCircle, Loader } from 'lucide-react';
 import { Card, Avatar, Badge, Rating, Button } from '../../components/ui';
-import { mockBookings, mockReviews } from '../../data/mockData';
+import { VerificationBanner } from '../../components/ui/VerificationBanner';
+import { bookingService } from '../../services/bookingService';
+import { professionalsService } from '../../services/professionalsService';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import './ProDashboard.css';
 
-const stats = [
-  { label: "Today's Bookings", value: '4', icon: <Calendar size={20} />, color: 'var(--primary-500)', bg: 'var(--primary-50)' },
-  { label: 'Weekly Earnings', value: '$580', icon: <DollarSign size={20} />, color: 'var(--success-500)', bg: 'var(--success-50)' },
-  { label: 'Rating', value: '4.9', icon: <Star size={20} />, color: '#fbbf24', bg: '#fbbf2415' },
-  { label: 'Total Clients', value: '1,250', icon: <Users size={20} />, color: 'var(--accent-500)', bg: 'var(--accent-100)' },
-];
-
 export default function ProDashboard() {
-  const { switchRole } = useAuth();
+  const { switchRole, verificationStatus, professionalId } = useAuth();
   const navigate = useNavigate();
-  const upcoming = mockBookings.filter(b => b.status === 'confirmed' || b.status === 'pending').slice(0, 3);
-  const walletBalance = 4.5; // Trigger the <$5 warning for demo purposes
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [walletBalance, setWalletBalance] = useState(0);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        if (!professionalId) { setLoading(false); return; }
+
+        const [bookingData, statsData] = await Promise.all([
+          bookingService.getProfessionalBookings(professionalId).catch(() => []),
+          professionalsService.getDashboardStats(professionalId).catch(() => null),
+        ]);
+
+        const bList = Array.isArray(bookingData) ? bookingData : (bookingData?.data || []);
+        setBookings(bList);
+
+        const revData = await professionalsService.getReviews(professionalId).catch(() => []);
+        setReviews(Array.isArray(revData) ? revData : []);
+
+        if (statsData) {
+          setStats(statsData);
+          setWalletBalance(statsData.totalEarnings || 0);
+        }
+      } catch (err) {
+        console.warn('Failed to load dashboard data', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [professionalId]);
+
+  const upcoming = bookings
+    .filter((b: any) => b.status === 'confirmed' || b.status === 'pending')
+    .slice(0, 3);
+
+  const todayBookings = bookings.filter((b: any) => {
+    const bDate = new Date(b.scheduledAt || b.date);
+    const today = new Date();
+    return bDate.toDateString() === today.toDateString();
+  });
+
+  const dashStats = [
+    { label: "Today's Bookings", value: String(todayBookings.length), icon: <Calendar size={20} />, color: 'var(--primary-500)', bg: 'var(--primary-50)' },
+    { label: 'Weekly Earnings', value: stats?.weeklyEarnings ? `$${stats.weeklyEarnings}` : '$0', icon: <DollarSign size={20} />, color: 'var(--success-500)', bg: 'var(--success-50)' },
+    { label: 'Rating', value: String(stats?.rating || '0'), icon: <Star size={20} />, color: '#fbbf24', bg: '#fbbf2415' },
+    { label: 'Total Clients', value: String(stats?.totalClients || bookings.length), icon: <Users size={20} />, color: 'var(--accent-500)', bg: 'var(--accent-100)' },
+  ];
+
+  if (loading) {
+    return (
+      <div className="pro-dash" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <Loader size={32} style={{ animation: 'spin 0.8s linear infinite', color: 'var(--primary-500)' }} />
+      </div>
+    );
+  }
 
   return (
     <div className="pro-dash">
+      <VerificationBanner status={verificationStatus} />
+
       <div className="pro-dash-header">
         <div>
           <h1>Dashboard</h1>
@@ -43,7 +99,7 @@ export default function ProDashboard() {
 
       {/* Stats Grid */}
       <div className="dash-stats">
-        {stats.map((s, i) => (
+        {dashStats.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
             <Card variant="default" padding="md" className="stat-card">
               <div className="stat-icon" style={{ color: s.color, background: s.bg }}>{s.icon}</div>
@@ -61,17 +117,17 @@ export default function ProDashboard() {
         <div className="earnings-top">
           <div>
             <p className="earnings-label">Monthly Earnings</p>
-            <h2 className="earnings-amount">$2,340</h2>
+            <h2 className="earnings-amount">${stats?.monthlyEarnings || 0}</h2>
           </div>
-          <div className="earnings-trend"><TrendingUp size={16} /> +12.5%</div>
+          <div className="earnings-trend"><TrendingUp size={16} /> {stats?.growthPercent || 0}%</div>
         </div>
         <div className="earnings-bar-container">
-          {[65, 45, 80, 55, 90, 70, 50].map((h, i) => (
+          {(stats?.weeklyBreakdown || [65, 45, 80, 55, 90, 70, 50]).map((h: number, i: number) => (
             <motion.div key={i} className="earnings-bar" initial={{ height: 0 }} animate={{ height: `${h}%` }} transition={{ delay: 0.3 + i * 0.08, duration: 0.5 }} />
           ))}
         </div>
         <div className="earnings-days">
-          {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => <span key={d}>{d}</span>)}
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => <span key={d}>{d}</span>)}
         </div>
       </Card>
 
@@ -80,21 +136,33 @@ export default function ProDashboard() {
         <section>
           <h2>Upcoming Appointments</h2>
           <div className="dash-list">
-            {upcoming.map(b => (
-              <Card key={b.id} variant="default" padding="sm" className="dash-appt-card">
-                <div className="dash-appt-top">
-                  <div className="dash-appt-info">
-                    <p className="dash-appt-name">{b.professionalName === 'Sofia Martinez' ? 'Client Name' : b.professionalName}</p>
-                    <p className="dash-appt-svc">{b.service}</p>
-                  </div>
-                  <Badge variant={b.status === 'confirmed' ? 'success' : 'warning'}>{b.status}</Badge>
-                </div>
-                <div className="dash-appt-meta">
-                  <span><Clock size={13} /> {b.time}</span>
-                  <span><Calendar size={13} /> {b.date}</span>
-                </div>
-              </Card>
-            ))}
+            {upcoming.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--neutral-400)' }}>
+                <Calendar size={32} style={{ opacity: 0.4, marginBottom: '8px' }} />
+                <p>No upcoming appointments</p>
+              </div>
+            ) : (
+              upcoming.map((b: any) => {
+                const clientName = b.client?.name || b.user?.name || b.professionalName || 'Client';
+                const svcName = b.service?.name || b.serviceName || b.service || 'Service';
+                const bDate = new Date(b.scheduledAt || b.date || new Date());
+                return (
+                  <Card key={b.id} variant="default" padding="sm" className="dash-appt-card">
+                    <div className="dash-appt-top">
+                      <div className="dash-appt-info">
+                        <p className="dash-appt-name">{clientName}</p>
+                        <p className="dash-appt-svc">{svcName}</p>
+                      </div>
+                      <Badge variant={b.status === 'confirmed' ? 'success' : 'warning'}>{b.status}</Badge>
+                    </div>
+                    <div className="dash-appt-meta">
+                      <span><Clock size={13} /> {b.time || bDate.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span><Calendar size={13} /> {bDate.toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span>
+                    </div>
+                  </Card>
+                );
+              })
+            )}
           </div>
         </section>
 
@@ -102,16 +170,23 @@ export default function ProDashboard() {
         <section>
           <h2>Recent Reviews</h2>
           <div className="dash-list">
-            {mockReviews.slice(0, 3).map(r => (
-              <Card key={r.id} variant="default" padding="sm" className="dash-review-card">
-                <div className="dash-review-top">
-                  <Avatar src={r.userAvatar} name={r.userName} size="xs" />
-                  <span className="dash-review-name">{r.userName}</span>
-                  <Rating value={r.rating} size="sm" />
-                </div>
-                <p className="dash-review-text">{r.comment}</p>
-              </Card>
-            ))}
+            {reviews.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--neutral-400)' }}>
+                <Star size={32} style={{ opacity: 0.4, marginBottom: '8px' }} />
+                <p>No reviews yet</p>
+              </div>
+            ) : (
+              reviews.slice(0, 3).map((r: any) => (
+                <Card key={r.id} variant="default" padding="sm" className="dash-review-card">
+                  <div className="dash-review-top">
+                    <Avatar src={r.userAvatar || r.user?.avatar} name={r.userName || r.user?.name || 'User'} size="xs" />
+                    <span className="dash-review-name">{r.userName || r.user?.name || 'User'}</span>
+                    <Rating value={r.rating || 0} size="sm" />
+                  </div>
+                  <p className="dash-review-text">{r.comment || r.text}</p>
+                </Card>
+              ))
+            )}
           </div>
         </section>
       </div>

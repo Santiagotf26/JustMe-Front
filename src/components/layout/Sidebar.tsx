@@ -1,5 +1,5 @@
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-// Framer motion removed for native CSS transitions
 import {
   LayoutDashboard, Users, Briefcase, BarChart3, Settings, LogOut,
   Scissors, CalendarDays, Wallet, Star, Image as ImageIcon,
@@ -9,6 +9,8 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../ui/Avatar';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { ModeTransition } from '../ui/ModeTransition';
+import { BecomeProfessionalModal } from '../ui/BecomeProfessionalModal';
 import './Sidebar.css';
 
 const userLinks = [
@@ -49,8 +51,11 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
-  const { user, role, logout, switchRole } = useAuth();
+  const { user, role, logout, switchRole, verificationStatus, refreshVerificationStatus } = useAuth();
   const navigate = useNavigate();
+  const [showModeTransition, setShowModeTransition] = useState(false);
+  const [targetMode, setTargetMode] = useState<'user' | 'professional'>('user');
+  const [showBecomeProModal, setShowBecomeProModal] = useState(false);
 
   const links = role === 'admin' ? adminLinks : role === 'professional' ? proLinks : userLinks;
   const roleLabel = role === 'admin' ? 'Admin' : role === 'professional' ? 'Professional' : 'Customer';
@@ -63,17 +68,56 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
   const handleRoleSwitch = () => {
     if (role === 'user') {
-      switchRole('professional');
-      navigate('/professional');
+      // If user is not an approved professional, show the application modal
+      if (verificationStatus !== 'approved') {
+        setShowBecomeProModal(true);
+        return;
+      }
+      setTargetMode('professional');
+      setShowModeTransition(true);
     } else if (role === 'professional') {
-      switchRole('user');
-      navigate('/user');
+      setTargetMode('user');
+      setShowModeTransition(true);
     }
     onClose?.();
   };
 
+  const handleTransitionComplete = () => {
+    setShowModeTransition(false);
+    if (targetMode === 'professional') {
+      switchRole('professional');
+      navigate('/professional');
+    } else {
+      switchRole('user');
+      navigate('/user');
+    }
+  };
+
+  const handleBecomeProSuccess = async () => {
+    await refreshVerificationStatus();
+  };
+
+  // Determine the switch button text
+  const switchButtonText = role === 'user'
+    ? (verificationStatus === 'approved' ? 'Switch to Professional Mode' : 'Become a Professional')
+    : 'Switch to Client Mode';
+
   return (
     <>
+      {/* Mode Transition Overlay */}
+      <ModeTransition
+        targetMode={targetMode}
+        isVisible={showModeTransition}
+        onComplete={handleTransitionComplete}
+      />
+
+      {/* Become Professional Modal */}
+      <BecomeProfessionalModal
+        isOpen={showBecomeProModal}
+        onClose={() => setShowBecomeProModal(false)}
+        onSuccess={handleBecomeProSuccess}
+      />
+
       {/* Mobile overlay */}
       {isOpen && <div className="sidebar-overlay" onClick={onClose} />}
 
@@ -88,11 +132,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
               <ShieldCheck size={12} />
               <span>{roleLabel}</span>
             </div>
-            {/* Mobile close button */}
-            <button
-              onClick={onClose}
-              className="sidebar-close-btn"
-            >
+            <button onClick={onClose} className="sidebar-close-btn">
               <X size={18} />
             </button>
           </div>
@@ -118,7 +158,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           {role !== 'admin' && (
             <button className="sidebar-role-switch" onClick={handleRoleSwitch}>
               <ArrowLeftRight size={16} />
-              {role === 'user' ? 'Become a Professional' : 'Switch to Client Mode'}
+              {switchButtonText}
             </button>
           )}
 

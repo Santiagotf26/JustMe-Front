@@ -7,3 +7,6 @@ export { Modal } from './Modal';
 export { Rating } from './Rating';
 export { Tabs } from './Tabs';
 export { Preloader } from './Preloader';
+export { BecomeProfessionalModal } from './BecomeProfessionalModal';
+export { VerificationBanner } from './VerificationBanner';
+export { ModeTransition } from './ModeTransition';

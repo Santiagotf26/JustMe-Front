@@ -4,10 +4,11 @@ import { Loader } from 'lucide-react';
 
 interface ProtectedRouteProps {
   allowedRoles?: ('user' | 'professional' | 'admin')[];
+  requireApproved?: boolean;
 }
 
-export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
-  const { isAuthenticated, role, isLoggingIn } = useAuth();
+export function ProtectedRoute({ allowedRoles, requireApproved }: ProtectedRouteProps) {
+  const { isAuthenticated, role, isLoggingIn, verificationStatus } = useAuth();
 
   if (isLoggingIn) {
     return (
@@ -25,6 +26,11 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     if (role === 'admin') return <Navigate to="/admin" replace />;
     if (role === 'professional') return <Navigate to="/professional" replace />;
     return <Navigate to="/user" replace />;
+  }
+
+  // Block non-approved professionals from restricted routes
+  if (requireApproved && role === 'professional' && verificationStatus !== 'approved') {
+    return <Navigate to="/professional" replace />;
   }
 
   return <Outlet />;

@@ -1,21 +1,73 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MapPin, Clock, Star, CheckCircle, ChevronRight, Calendar, DollarSign } from 'lucide-react';
+import { MapPin, Clock, Star, CheckCircle, ChevronRight, Calendar, DollarSign, Loader } from 'lucide-react';
 import { Button, Avatar, Rating, Card, Badge } from '../../components/ui';
-import { mockProfessionals, mockReviews } from '../../data/mockData';
+import { professionalsService } from '../../services/professionalsService';
+import { availabilityService } from '../../services/availabilityService';
 import './ProfessionalProfile.css';
 
 export default function ProfessionalProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const pro = mockProfessionals.find(p => p.id === id) || mockProfessionals[0];
+  const [pro, setPro] = useState<any>(null);
+  const [services, setServices] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const servicesList = [
-    { name: 'Basic Haircut', duration: '30 min', price: pro.price },
-    { name: 'Haircut & Styling', duration: '45 min', price: pro.price + 10 },
-    { name: 'Premium Service', duration: '60 min', price: pro.price + 25 },
-    { name: 'Full Treatment', duration: '90 min', price: pro.price + 40 },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!id) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const [proData, svcData, revData] = await Promise.all([
+          professionalsService.getProfessionalById(id),
+          professionalsService.getServices(id),
+          professionalsService.getReviews(id),
+        ]);
+        setPro(proData);
+        setServices(Array.isArray(svcData) ? svcData : (svcData?.data || []));
+        setReviews(Array.isArray(revData) ? revData : []);
+      } catch (err: any) {
+        console.error('Failed to load professional profile', err);
+        setError('No se pudo cargar el perfil del profesional');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="pro-profile-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <Loader size={32} style={{ animation: 'spin 0.8s linear infinite', color: 'var(--primary-500)' }} />
+      </div>
+    );
+  }
+
+  if (error || !pro) {
+    return (
+      <div className="pro-profile-page" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+        <p style={{ color: 'var(--neutral-400)' }}>{error || 'Professional not found'}</p>
+        <Button variant="ghost" onClick={() => navigate(-1)}>Go Back</Button>
+      </div>
+    );
+  }
+
+  const proName = pro.name || pro.user?.name || 'Professional';
+  const proAvatar = pro.avatar || pro.photoUrl || pro.user?.avatar;
+  const proRating = pro.rating || 0;
+  const proReviewCount = pro.reviewCount || reviews.length;
+  const proBio = pro.bio || pro.description || '';
+  const proLocation = pro.location || {};
+  const proVerified = pro.verified !== undefined ? pro.verified : true;
+  const proDistance = pro.distance || 0;
+  const proResponseTime = pro.responseTime || '~10 min';
+  const proCompletedServices = pro.completedServices || pro.totalServices || 0;
+  const basePrice = services.length > 0 ? Math.min(...services.map((s: any) => s.price || 0)) : (pro.price || 0);
 
   return (
     <div className="pro-profile-page">
@@ -23,17 +75,17 @@ export default function ProfessionalProfile() {
       <motion.div className="pro-hero" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <div className="pro-hero-bg" />
         <div className="pro-hero-content">
-          <Avatar src={pro.avatar} name={pro.name} size="xl" />
+          <Avatar src={proAvatar} name={proName} size="xl" />
           <div className="pro-hero-info">
             <div className="pro-hero-name">
-              <h1>{pro.name}</h1>
-              {pro.verified && <Badge variant="success" size="md"><CheckCircle size={12} /> Verified</Badge>}
+              <h1>{proName}</h1>
+              {proVerified && <Badge variant="success" size="md"><CheckCircle size={12} /> Verified</Badge>}
             </div>
-            <Rating value={pro.rating} size="md" showValue count={pro.reviewCount} />
+            <Rating value={proRating} size="md" showValue count={proReviewCount} />
             <div className="pro-hero-meta">
-              <span><MapPin size={14} /> {pro.distance} km away</span>
-              <span><Clock size={14} /> {pro.responseTime} response</span>
-              <span><Star size={14} /> {pro.completedServices} services</span>
+              <span><MapPin size={14} /> {proDistance.toFixed(1)} km away</span>
+              <span><Clock size={14} /> {proResponseTime} response</span>
+              <span><Star size={14} /> {proCompletedServices} services</span>
             </div>
           </div>
         </div>
@@ -41,29 +93,35 @@ export default function ProfessionalProfile() {
 
       <div className="pro-profile-body">
         {/* Bio */}
-        <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <h2>About</h2>
-          <p className="pro-bio">{pro.bio}</p>
-        </motion.section>
+        {proBio && (
+          <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <h2>About</h2>
+            <p className="pro-bio">{proBio}</p>
+          </motion.section>
+        )}
 
         {/* Services */}
         <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <h2>Services & Prices</h2>
-          <div className="services-list">
-            {servicesList.map((svc, i) => (
-              <Card key={i} variant="default" padding="sm" hover className="service-row"
-                onClick={() => navigate(`/user/booking/${pro.id}`)}>
-                <div className="service-info">
-                  <h4>{svc.name}</h4>
-                  <span className="service-dur"><Clock size={13} /> {svc.duration}</span>
-                </div>
-                <div className="service-price-action">
-                  <span className="service-price">${svc.price}</span>
-                  <ChevronRight size={16} />
-                </div>
-              </Card>
-            ))}
-          </div>
+          {services.length === 0 ? (
+            <p style={{ color: 'var(--neutral-400)', fontSize: 'var(--text-sm)' }}>No services listed yet</p>
+          ) : (
+            <div className="services-list">
+              {services.map((svc: any, i: number) => (
+                <Card key={svc.id || i} variant="default" padding="sm" hover className="service-row"
+                  onClick={() => navigate(`/user/booking/${pro.id}`)}>
+                  <div className="service-info">
+                    <h4>{svc.name}</h4>
+                    <span className="service-dur"><Clock size={13} /> {svc.duration || 30} min</span>
+                  </div>
+                  <div className="service-price-action">
+                    <span className="service-price">${svc.price || 0}</span>
+                    <ChevronRight size={16} />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </motion.section>
 
         {/* Availability */}
@@ -73,45 +131,37 @@ export default function ProfessionalProfile() {
             <div className="availability-info">
               <Calendar size={20} />
               <div>
-                <p className="avail-status">{pro.availability}</p>
-                <p className="avail-location"><MapPin size={13} /> {pro.location.address}</p>
+                <p className="avail-status">{pro.availability || 'Check available slots'}</p>
+                {proLocation.address && (
+                  <p className="avail-location"><MapPin size={13} /> {proLocation.address}</p>
+                )}
               </div>
             </div>
           </Card>
         </motion.section>
 
-        {/* Portfolio */}
-        <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <h2>Portfolio</h2>
-          <div className="portfolio-grid">
-            {[1,2,3,4,5,6].map(i => (
-              <div key={i} className="portfolio-item">
-                <div className="portfolio-placeholder">
-                  <Star size={20} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.section>
-
         {/* Reviews */}
         <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-          <h2>Reviews ({pro.reviewCount})</h2>
-          <div className="reviews-list">
-            {mockReviews.slice(0, 3).map(review => (
-              <Card key={review.id} variant="default" padding="md" className="review-card">
-                <div className="review-header">
-                  <Avatar src={review.userAvatar} name={review.userName} size="sm" />
-                  <div>
-                    <p className="review-name">{review.userName}</p>
-                    <p className="review-date">{review.date}</p>
+          <h2>Reviews ({proReviewCount})</h2>
+          {reviews.length === 0 ? (
+            <p style={{ color: 'var(--neutral-400)', fontSize: 'var(--text-sm)' }}>No reviews yet</p>
+          ) : (
+            <div className="reviews-list">
+              {reviews.slice(0, 5).map((review: any) => (
+                <Card key={review.id} variant="default" padding="md" className="review-card">
+                  <div className="review-header">
+                    <Avatar src={review.userAvatar || review.user?.avatar} name={review.userName || review.user?.name || 'User'} size="sm" />
+                    <div>
+                      <p className="review-name">{review.userName || review.user?.name || 'User'}</p>
+                      <p className="review-date">{review.date || new Date(review.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <Rating value={review.rating || 0} size="sm" />
                   </div>
-                  <Rating value={review.rating} size="sm" />
-                </div>
-                <p className="review-text">{review.comment}</p>
-              </Card>
-            ))}
-          </div>
+                  <p className="review-text">{review.comment || review.text}</p>
+                </Card>
+              ))}
+            </div>
+          )}
         </motion.section>
       </div>
 
@@ -119,7 +169,7 @@ export default function ProfessionalProfile() {
       <div className="pro-book-cta glass">
         <div className="cta-price-info">
           <span className="cta-from">From</span>
-          <span className="cta-price">${pro.price}</span>
+          <span className="cta-price">${basePrice}</span>
         </div>
         <Button size="lg" onClick={() => navigate(`/user/booking/${pro.id}`)} iconRight={<DollarSign size={18} />}>
           Book Now

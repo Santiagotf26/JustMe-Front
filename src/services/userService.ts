@@ -2,18 +2,69 @@ import { apiClient } from './api';
 
 export interface UpdateUserProfileDto {
   name?: string;
+  lastName?: string;
   phone?: string;
   photoUrl?: string;
+  latitude?: number;
+  longitude?: number;
+  city?: string;
+  department?: string;
 }
 
 export const userService = {
   updateProfile: async (id: string, data: UpdateUserProfileDto) => {
-    const response = await apiClient.patch(`/users/${id}`, data);
+    // Backend uses PUT /users/:userId
+    const response = await apiClient.put(`/users/${id}`, data);
     return response.data;
   },
 
   getProfile: async (id: string) => {
     const response = await apiClient.get(`/users/${id}`);
     return response.data;
-  }
+  },
+
+  getFavorites: async () => {
+    try {
+      // Favorites has its own controller at /favorites
+      const response = await apiClient.get('/favorites');
+      return response.data;
+    } catch {
+      return [];
+    }
+  },
+
+  getPaymentHistory: async () => {
+    try {
+      // Payments controller only has POST endpoints (intent, confirm, refund)
+      // There's no GET history endpoint in the backend, so we return empty
+      // TODO: Add GET /payments/history endpoint in backend
+      return [];
+    } catch {
+      return [];
+    }
+  },
+
+  getCoupons: async () => {
+    try {
+      // Coupons has its own controller at /coupons
+      const response = await apiClient.get('/coupons');
+      return response.data;
+    } catch {
+      return [];
+    }
+  },
+
+  toggleFavorite: async (professionalId: number) => {
+    const response = await apiClient.post(`/favorites/${professionalId}`);
+    return response.data;
+  },
+
+  isFavorite: async (professionalId: number) => {
+    try {
+      const response = await apiClient.get(`/favorites/check/${professionalId}`);
+      return response.data;
+    } catch {
+      return false;
+    }
+  },
 };
