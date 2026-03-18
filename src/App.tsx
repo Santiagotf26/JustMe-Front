@@ -1,9 +1,10 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { Preloader } from './components/ui';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 // Public pages
 import Landing from './pages/public/Landing';
@@ -51,43 +52,51 @@ function App() {
             <Route path="/register" element={<Register />} />
 
             {/* User Routes */}
-            <Route path="/user" element={<AppLayout />}>
-              <Route index element={<UserHome />} />
-              <Route path="search" element={<SearchPage />} />
-              <Route path="professional/:id" element={<ProfessionalProfile />} />
-              <Route path="booking/:id" element={<Booking />} />
-              <Route path="appointments" element={<Appointments />} />
-              <Route path="favorites" element={<UserFavorites />} />
-              <Route path="payments" element={<UserPayments />} />
-              <Route path="rewards" element={<UserRewards />} />
-              <Route path="profile" element={<UserProfile />} />
+            <Route element={<ProtectedRoute allowedRoles={['user', 'admin']} />}>
+              <Route path="/user" element={<AppLayout />}>
+                <Route index element={<UserHome />} />
+                <Route path="search" element={<SearchPage />} />
+                <Route path="professional/:id" element={<ProfessionalProfile />} />
+                <Route path="booking/:id" element={<Booking />} />
+                <Route path="appointments" element={<Appointments />} />
+                <Route path="favorites" element={<UserFavorites />} />
+                <Route path="payments" element={<UserPayments />} />
+                <Route path="rewards" element={<UserRewards />} />
+                <Route path="profile" element={<UserProfile />} />
+              </Route>
             </Route>
 
             {/* Professional Routes */}
-            <Route path="/professional" element={<AppLayout />}>
-              <Route index element={<ProDashboard />} />
-              <Route path="requests" element={<ProBookingRequests />} />
-              <Route path="calendar" element={<ProCalendar />} />
-              <Route path="earnings" element={<ProEarnings />} />
-              <Route path="wallet" element={<ProWallet />} />
-              <Route path="services" element={<ProServices />} />
-              <Route path="portfolio" element={<ProPortfolio />} />
-              <Route path="reviews" element={<ProReviews />} />
-              <Route path="profile" element={<ProProfileEditor />} />
-              <Route path="schedule" element={<ProSchedule />} />
-              <Route path="analytics" element={<ProAnalytics />} />
+            <Route element={<ProtectedRoute allowedRoles={['professional', 'admin']} />}>
+              <Route path="/professional" element={<AppLayout />}>
+                <Route index element={<ProDashboard />} />
+                <Route path="requests" element={<ProBookingRequests />} />
+                <Route path="calendar" element={<ProCalendar />} />
+                <Route path="earnings" element={<ProEarnings />} />
+                <Route path="wallet" element={<ProWallet />} />
+                <Route path="services" element={<ProServices />} />
+                <Route path="portfolio" element={<ProPortfolio />} />
+                <Route path="reviews" element={<ProReviews />} />
+                <Route path="profile" element={<ProProfileEditor />} />
+                <Route path="schedule" element={<ProSchedule />} />
+                <Route path="analytics" element={<ProAnalytics />} />
+              </Route>
             </Route>
 
             {/* Admin Routes */}
-            <Route path="/admin" element={<AppLayout />}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="professionals" element={<AdminProfessionals />} />
-              <Route path="services" element={<AdminServices />} />
-              <Route path="transactions" element={<AdminTransactions />} />
-              <Route path="analytics" element={<AdminAnalytics />} />
-              <Route path="settings" element={<AdminSettings />} />
+            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+              <Route path="/admin" element={<AppLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="professionals" element={<AdminProfessionals />} />
+                <Route path="services" element={<AdminServices />} />
+                <Route path="transactions" element={<AdminTransactions />} />
+                <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
             </Route>
+            
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </NotificationProvider>
       </AuthProvider>

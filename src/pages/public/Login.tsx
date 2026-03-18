@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, User, Scissors, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, AlertCircle } from 'lucide-react';
 import { Button, Input } from '../../components/ui';
 import { Scene3D } from '../../components/three/Scene3D';
 import { useAuth } from '../../context/AuthContext';
@@ -17,7 +17,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState<'user' | 'professional' | 'admin'>('user');
+  const [apiError, setApiError] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [touched, setTouched] = useState<{ email?: boolean; password?: boolean }>({});
 
@@ -44,27 +44,23 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setApiError(null);
     setTouched({ email: true, password: true });
     if (!validate()) return;
 
     setLoading(true);
     try {
-      // The login function in AuthContext should ideally return the user or we call authService directly if needed,
-      // but let's stick to the context and assume it updates the state.
-      // However, the context login doesn't return anything currently.
-      // Let's modify AuthContext login to return the user role for easier redirection here.
       await login({ email, password });
-
-      // Explicitly get the role from localStorage as it's set in AuthContext
+      
       const userRole = localStorage.getItem('justme_role') || 'user';
-
-      notify('success', 'Welcome back!', 'You have been logged in successfully.');
+      notify('success', 'Bienvenido de nuevo!', 'Sesión iniciada correctamente.');
 
       if (userRole === 'admin') navigate('/admin');
       else if (userRole === 'professional') navigate('/professional');
       else navigate('/user');
     } catch (err: any) {
-      notify('error', 'Login failed', err.response?.data?.message || 'Invalid credentials.');
+      const msg = err.response?.data?.message || 'Credenciales inválidas.';
+      setApiError(typeof msg === 'string' ? msg : msg[0]);
     } finally {
       setLoading(false);
     }
@@ -103,22 +99,6 @@ export default function Login() {
 
           <h1>Sign in</h1>
           <p className="login-subtitle">Enter your credentials to access your account</p>
-
-          {/* Role Selector */}
-          <div className="role-selector">
-            {(['user', 'professional', 'admin'] as const).map(r => (
-              <motion.button
-                key={r}
-                className={`role-btn ${role === r ? 'role-btn-active' : ''}`}
-                onClick={() => setRole(r)}
-                type="button"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-              >
-                {r === 'user' ? <><User size={16} /> Client</> : r === 'professional' ? <><Scissors size={16} /> Professional</> : <><ShieldCheck size={16} /> Admin</>}
-              </motion.button>
-            ))}
-          </div>
 
           <form onSubmit={handleLogin} className="login-form">
             <div className="form-field">
@@ -163,6 +143,18 @@ export default function Login() {
                 )}
               </AnimatePresence>
             </div>
+
+            <AnimatePresence>
+              {apiError && (
+                <motion.div
+                  className="field-error"
+                  style={{ background: 'var(--error-50)', padding: '10px 14px', borderRadius: '8px', display: 'flex', gap: '8px', alignItems: 'center', marginTop: '16px', color: 'var(--error-500)' }}
+                  initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
+                >
+                  <AlertCircle size={16} /> {apiError}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div className="login-options">
               <label className="login-remember"><input type="checkbox" /> Remember me</label>

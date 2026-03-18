@@ -2,12 +2,14 @@ import { motion } from 'framer-motion';
 import { Camera, MapPin, Heart, CreditCard, Star, Edit3 } from 'lucide-react';
 import { Card, Avatar, Button, Badge } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
-import { mockBookings, mockProfessionals, mockTransactions } from '../../data/mockData';
+import { useBookings } from '../../hooks/useBookings';
+import { mockProfessionals, mockTransactions } from '../../data/mockData';
 import { useNavigate } from 'react-router-dom';
 import './UserProfile.css';
 
 export default function UserProfile() {
-  const { user, switchRole } = useAuth();
+  const { user, switchRole, logout } = useAuth();
+  const { bookings } = useBookings();
   const navigate = useNavigate();
   const favorites = mockProfessionals.slice(0, 3);
   const payments = mockTransactions.filter(t => t.type === 'payment').slice(0, 3);
@@ -28,9 +30,9 @@ export default function UserProfile() {
 
       {/* Stats */}
       <div className="profile-stats">
-        <div className="stat-item"><span className="stat-val">{mockBookings.filter(b => b.status === 'completed').length}</span><span className="stat-label">Bookings</span></div>
+        <div className="stat-item"><span className="stat-val">{bookings.filter(b => b.status === 'completed').length}</span><span className="stat-label">Bookings</span></div>
         <div className="stat-item"><span className="stat-val">{favorites.length}</span><span className="stat-label">Favorites</span></div>
-        <div className="stat-item"><span className="stat-val">{mockBookings.filter(b => b.status === 'completed').length}</span><span className="stat-label">Reviews</span></div>
+        <div className="stat-item"><span className="stat-val">{bookings.filter(b => b.status === 'completed').length}</span><span className="stat-label">Reviews</span></div>
       </div>
 
       {user?.role === 'user' && (
@@ -84,6 +86,11 @@ export default function UserProfile() {
             <span className="pay-amount">-${p.amount}</span>
           </Card>
         ))}
+      </section>
+
+      {/* Account Actions */}
+      <section className="profile-section" style={{ marginTop: '2rem', textAlign: 'center' }}>
+        <Button variant="danger" onClick={() => { logout(); navigate('/login'); }}>Cerrar Sesión</Button>
       </section>
     </div>
   );
