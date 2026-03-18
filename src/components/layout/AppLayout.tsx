@@ -20,26 +20,10 @@ export function AppLayout() {
   const { isAuthenticated, isLoggingIn } = useAuth();
 
   useEffect(() => {
-    if (!isLoggingIn) {
-      if (!isAuthenticated) {
-        navigate('/login');
-      } else {
-        const currentRole = localStorage.getItem('justme_role');
-        const path = location.pathname;
-        
-        // Basic role-based route protection
-        if (path.startsWith('/admin') && currentRole !== 'admin') {
-          navigate(currentRole === 'professional' ? '/professional' : '/user');
-        } else if (path.startsWith('/professional') && currentRole !== 'professional' && currentRole !== 'admin') {
-          // Admins can see professional pages, but users cannot
-          navigate('/user');
-        } else if (path.startsWith('/user') && currentRole !== 'user' && currentRole !== 'admin') {
-          // Admins can see user pages, but professionals cannot
-          navigate('/professional');
-        }
-      }
+    if (!isLoggingIn && !isAuthenticated) {
+      navigate('/login');
     }
-  }, [isLoggingIn, isAuthenticated, navigate, location.pathname]);
+  }, [isLoggingIn, isAuthenticated, navigate]);
 
   if (isLoggingIn) {
     return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Loading...</div>;

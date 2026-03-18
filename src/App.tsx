@@ -3,8 +3,8 @@ import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
-import { Preloader } from './components/ui';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { Preloader } from './components/ui';
 
 // Public pages
 import Landing from './pages/public/Landing';
@@ -52,7 +52,7 @@ function App() {
             <Route path="/register" element={<Register />} />
 
             {/* User Routes */}
-            <Route element={<ProtectedRoute allowedRoles={['user', 'admin']} />}>
+            <Route element={<ProtectedRoute allowedRoles={['user', 'professional', 'admin']} />}>
               <Route path="/user" element={<AppLayout />}>
                 <Route index element={<UserHome />} />
                 <Route path="search" element={<SearchPage />} />
