@@ -18,7 +18,7 @@ export default function Register() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<'user' | 'professional'>('user');
-  const [form, setForm] = useState({ name: '', phone: '', email: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({ name: '', lastName: '', phone: '', email: '', password: '', confirmPassword: '' });
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -31,7 +31,8 @@ export default function Register() {
     const val = value ?? form[key as keyof typeof form];
     let err: string | null = null;
     switch (key) {
-      case 'name': err = validateRequired(val, 'Full name'); break;
+      case 'name': err = validateRequired(val, 'First name'); break;
+      case 'lastName': err = validateRequired(val, 'Last name'); break;
       case 'phone': err = validatePhone(val); break;
       case 'email': err = validateEmail(val); break;
       case 'password': err = validatePassword(val); break;
@@ -51,11 +52,12 @@ export default function Register() {
   const validateStep = (): boolean => {
     if (step === 0) return true;
     if (step === 1) {
-      const fields = ['name', 'phone'];
+      const fields = ['name', 'lastName', 'phone'];
       fields.forEach(f => { setTouched(prev => ({ ...prev, [f]: true })); validateField(f); });
       return fields.every(f => {
         const val = form[f as keyof typeof form];
-        if (f === 'name') return !validateRequired(val, 'Full name');
+        if (f === 'name') return !validateRequired(val, 'First name');
+        if (f === 'lastName') return !validateRequired(val, 'Last name');
         if (f === 'phone') return !validatePhone(val);
         return true;
       });
@@ -83,13 +85,16 @@ export default function Register() {
     try {
       await register({
         name: form.name,
+        lastName: form.lastName,
         email: form.email,
         password: form.password,
         phone: form.phone,
         role: role
       });
+
+      const userRole = localStorage.getItem('justme_role') || role;
       notify('success', 'Account created!', 'Welcome to JustMe. Let\'s get started.');
-      navigate(role === 'professional' ? '/professional' : '/user');
+      navigate(userRole === 'admin' ? '/admin' : userRole === 'professional' ? '/professional' : '/user');
     } catch (err: any) {
       notify('error', 'Registration failed', err.response?.data?.message || 'Failed to create account.');
     } finally {
@@ -157,11 +162,21 @@ export default function Register() {
               {step === 1 && (
                 <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="register-step">
                   <div className="form-field">
-                    <Input label="Full name" icon={<User size={18} />} value={form.name} onChange={e => update('name', e.target.value)} onBlur={() => handleBlur('name')} className={touched.name && errors.name ? 'input-error' : ''} />
+                    <Input label="First name" icon={<User size={18} />} value={form.name} onChange={e => update('name', e.target.value)} onBlur={() => handleBlur('name')} className={touched.name && errors.name ? 'input-error' : ''} />
                     <AnimatePresence>
                       {touched.name && errors.name && (
                         <motion.span className="field-error" initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}>
                           <AlertCircle size={12} /> {errors.name}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  <div className="form-field">
+                    <Input label="Last name" icon={<User size={18} />} value={form.lastName} onChange={e => update('lastName', e.target.value)} onBlur={() => handleBlur('lastName')} className={touched.lastName && errors.lastName ? 'input-error' : ''} />
+                    <AnimatePresence>
+                      {touched.lastName && errors.lastName && (
+                        <motion.span className="field-error" initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}>
+                          <AlertCircle size={12} /> {errors.lastName}
                         </motion.span>
                       )}
                     </AnimatePresence>

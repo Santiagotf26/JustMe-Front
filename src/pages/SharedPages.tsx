@@ -61,7 +61,7 @@ export function ProBookingRequests() {
 }
 
 export function ProCalendar() {
-  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const hours = Array.from({ length: 10 }, (_, i) => `${9 + i}:00`);
 
   // Pre-compute random booking slots once, so they don't flicker on re-render
@@ -217,23 +217,23 @@ export function ProProfileEditor() {
 
   React.useEffect(() => {
     if (user?.id) {
-       professionalsService.getProfessionalById(user.id).then(data => {
-         if (data) {
-           setFormData(prev => ({
-             ...prev,
-             bio: data.bio || prev.bio,
-             address: data.location?.address || prev.address,
-             serviceRadius: data.serviceRadius || prev.serviceRadius
-           }));
-         }
-       }).catch(console.warn);
+      professionalsService.getProfessionalById(String(user.id)).then(data => {
+        if (data) {
+          setFormData(prev => ({
+            ...prev,
+            bio: data.bio || prev.bio,
+            address: data.location?.address || prev.address,
+            serviceRadius: data.serviceRadius || prev.serviceRadius
+          }));
+        }
+      }).catch(console.warn);
     }
   }, [user?.id]);
 
   const handleSave = async () => {
     if (!user?.id) return;
     try {
-      await professionalsService.updateProfile(user.id, formData);
+      await professionalsService.updateProfile(String(user.id), formData);
       alert('Profile saved successfully');
     } catch (e) {
       alert('Failed to save profile');

@@ -2,10 +2,12 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import { authService, type LoginCredentials, type RegisterData } from '../services/authService';
 
 export interface UserProfile {
-  id: string;
+  id: string | number;
   name: string;
+  lastName?: string;
   email: string;
-  role: 'user' | 'professional' | 'admin';
+  roles: { id: number; name: string }[];
+  role?: 'user' | 'professional' | 'admin';
   photoUrl?: string;
   phone?: string;
   avatar?: string;
@@ -39,9 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (token) {
         try {
           const profile = await authService.getProfile();
-          setUser(profile);
-          setRole(profile.role);
-          localStorage.setItem('justme_role', profile.role);
+          const userRole = profile.roles?.[0]?.name || 'user';
+          setUser({ ...profile, role: userRole });
+          setRole(userRole as any);
+          localStorage.setItem('justme_role', userRole);
         } catch (error) {
           console.error("Failed to fetch profile automatically", error);
           logout();
@@ -62,10 +65,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoggingIn(true);
     try {
       const response = await authService.login(credentials);
-      localStorage.setItem('justme_token', response.token);
-      localStorage.setItem('justme_role', response.user.role);
-      setUser(response.user as UserProfile);
-      setRole(response.user.role);
+      const token = response.access_token || response.token;
+      if (token) {
+        localStorage.setItem('justme_token', token);
+      }
+
+      const userRole = response.user.roles?.[0]?.name || 'user';
+      localStorage.setItem('justme_role', userRole);
+      setUser({ ...response.user, role: userRole } as unknown as UserProfile);
+      setRole(userRole as any);
+    } catch (error) {
+      console.error('Login error in context:', error);
+      throw error;
     } finally {
       setIsLoggingIn(false);
     }
@@ -75,10 +86,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoggingIn(true);
     try {
       const response = await authService.register(data);
-      localStorage.setItem('justme_token', response.token);
-      localStorage.setItem('justme_role', response.user.role);
-      setUser(response.user as UserProfile);
-      setRole(response.user.role);
+      const token = response.access_token || response.token;
+      if (token) {
+        localStorage.setItem('justme_token', token);
+      }
+
+      const userRole = response.user.roles?.[0]?.name || 'user';
+      localStorage.setItem('justme_role', userRole);
+      setUser({ ...response.user, role: userRole } as unknown as UserProfile);
+      setRole(userRole as any);
+    } catch (error) {
+      console.error('Registration error in context:', error);
+      throw error;
     } finally {
       setIsLoggingIn(false);
     }
@@ -93,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const switchRole = (newRole: 'user' | 'professional' | 'admin') => {
     if (user) {
-      setUser({ ...user, role: newRole });
+      setUser({ ...user, roles: [{ id: 0, name: newRole }] });
       setRole(newRole);
       localStorage.setItem('justme_role', newRole);
     }
