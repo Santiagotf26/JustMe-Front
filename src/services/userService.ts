@@ -18,6 +18,11 @@ export const userService = {
     return response.data;
   },
 
+  adminUpdateUser: async (id: string | number, data: any) => {
+    const response = await apiClient.put(`/users/${id}`, data);
+    return response.data;
+  },
+
   getProfile: async (id: string) => {
     const response = await apiClient.get(`/users/${id}`);
     return response.data;

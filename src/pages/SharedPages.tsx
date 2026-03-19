@@ -488,8 +488,15 @@ export function ProReviews() {
 /* ============== ADMIN PAGES ============== */
 
 export function AdminUsers() {
+  const { notify } = useNotification();
   const [users, setUsers] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [showModal, setShowModal] = React.useState(false);
+  const [editingUser, setEditingUser] = React.useState<any>(null);
+  const [saving, setSaving] = React.useState(false);
+  const [formData, setFormData] = React.useState({
+    name: '', lastName: '', email: '', phone: '', docType: '', docNumber: '', isActive: true
+  });
 
   React.useEffect(() => {
     apiClient.get('/admin/users').then(res => {
@@ -497,7 +504,39 @@ export function AdminUsers() {
     }).catch(() => setUsers([])).finally(() => setLoading(false));
   }, []);
 
+  const handleOpenEdit = (user: any) => {
+    setEditingUser(user);
+    setFormData({
+      name: user.name || '',
+      lastName: user.lastName || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      docType: user.docType || '',
+      docNumber: user.docNumber || '',
+      isActive: user.isActive !== false
+    });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!editingUser) return;
+    setSaving(true);
+    try {
+      await userService.adminUpdateUser(editingUser.id, formData);
+      notify('success', 'User Updated', 'The user details have been updated successfully.');
+      setUsers(users.map(u => u.id === editingUser.id ? { ...u, ...formData } : u));
+      setShowModal(false);
+    } catch (err: any) {
+      notify('error', 'Update Failed', err?.response?.data?.message || 'Failed to update user');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) return <div style={loadingCenter}><Loader size={28} style={{ animation: 'spin 0.8s linear infinite', color: 'var(--primary-500)' }} /></div>;
+
+  const inputStyle: React.CSSProperties = { width: '100%', padding: 'var(--space-2) var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-md)', outline: 'none' };
+  const labelStyle: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 };
 
   return (
     <div style={pageStyle}>
@@ -517,7 +556,7 @@ export function AdminUsers() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--neutral-100)' }}>
-                  {['User', 'Email', 'Role', 'Status'].map(h => (
+                  {['User', 'Email', 'Role', 'Status', 'Actions'].map(h => (
                     <th key={h} style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left', fontWeight: 600, fontSize: 'var(--text-xs)', color: 'var(--neutral-400)', textTransform: 'uppercase' }}>{h}</th>
                   ))}
                 </tr>
@@ -526,11 +565,14 @@ export function AdminUsers() {
                 {users.map((u: any) => (
                   <tr key={u.id} style={{ borderBottom: '1px solid var(--neutral-50)' }}>
                     <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
-                      <div style={rowStyle}><Avatar name={u.name || 'User'} size="xs" /><span style={{ fontWeight: 500 }}>{u.name || 'User'}</span></div>
+                      <div style={rowStyle}><Avatar name={`${u.name || ''} ${u.lastName || ''}`.trim() || 'User'} size="xs" /><span style={{ fontWeight: 500 }}>{`${u.name || ''} ${u.lastName || ''}`.trim() || 'User'}</span></div>
                     </td>
                     <td style={{ padding: 'var(--space-3) var(--space-4)', color: 'var(--neutral-500)' }}>{u.email}</td>
                     <td style={{ padding: 'var(--space-3) var(--space-4)' }}><Badge variant="primary" size="sm">{u.roles?.[0]?.name || 'user'}</Badge></td>
                     <td style={{ padding: 'var(--space-3) var(--space-4)' }}><Badge variant={u.isActive !== false ? 'success' : 'error'} size="sm">{u.isActive !== false ? 'Active' : 'Disabled'}</Badge></td>
+                    <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
+                      <Button size="sm" variant="ghost" icon={<Edit size={14} />} onClick={() => handleOpenEdit(u)}>Edit</Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -538,6 +580,52 @@ export function AdminUsers() {
           </div>
         </Card>
       )}
+
+      {/* Edit User Modal */}
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Edit User">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', minWidth: '320px', padding: 'var(--space-2)' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>First Name *</label>
+              <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={inputStyle} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Last Name</label>
+              <input type="text" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} style={inputStyle} />
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>Email *</label>
+            <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Phone</label>
+            <input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} style={inputStyle} />
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Document Type</label>
+              <input type="text" value={formData.docType} onChange={e => setFormData({ ...formData, docType: e.target.value })} placeholder="e.g. ID, Passport" style={inputStyle} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Document Number</label>
+              <input type="text" value={formData.docNumber} onChange={e => setFormData({ ...formData, docNumber: e.target.value })} style={inputStyle} />
+            </div>
+          </div>
+          <div style={{ marginTop: 'var(--space-2)' }}>
+            <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={formData.isActive} onChange={e => setFormData({ ...formData, isActive: e.target.checked })} style={{ accentColor: 'var(--primary-500)', width: 16, height: 16 }} />
+              Active Account
+            </label>
+            <p style={{ fontSize: '11px', color: 'var(--neutral-400)', marginTop: 2 }}>Unchecking this will disable the user's ability to log in.</p>
+          </div>
+          
+          <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end', marginTop: 'var(--space-3)' }}>
+            <Button variant="ghost" onClick={() => setShowModal(false)}>Cancel</Button>
+            <Button onClick={handleSave} loading={saving}>Save Changes</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
