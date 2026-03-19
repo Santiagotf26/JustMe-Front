@@ -79,7 +79,7 @@ export default function AdminDashboard() {
                 <Avatar src={pro.user?.avatar} name={`${pro.user?.name ?? ''} ${pro.user?.lastName ?? ''}`} size="sm" />
                 <div className="admin-row-info">
                   <p className="admin-row-name">{`${pro.user?.name ?? ''} ${pro.user?.lastName ?? ''}`.trim()}</p>
-                  <p className="admin-row-detail">{pro.specialties?.join(', ') || 'Profesional'}</p>
+                  <p className="admin-row-detail">{Array.isArray(pro.specialties) ? pro.specialties.join(', ') : (pro.specialties || 'Profesional')}</p>
                 </div>
                 <Badge variant={pro.isVerified ? 'success' : 'warning'} size="sm">{pro.isVerified ? 'Verificado' : 'Pendiente'}</Badge>
                 <Button size="sm" variant="ghost">Ver</Button>
