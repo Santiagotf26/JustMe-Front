@@ -3,7 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, AlertCircle } from 'lucide-react';
 import { Button, Input } from '../../components/ui';
+import { LanguageToggle } from '../../components/ui';
 import { Scene3D } from '../../components/three/Scene3D';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { validateEmail, validatePassword } from '../../utils/validators';
@@ -11,6 +13,7 @@ import './Login.css';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { login } = useAuth();
   const { notify } = useNotification();
   const [email, setEmail] = useState('');
@@ -78,8 +81,8 @@ export default function Login() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.8 }}
           >
-            <h2>Welcome back to<br /><span className="text-gradient">JustMe</span></h2>
-            <p>Your beauty, your terms.</p>
+            <h2>{t('login.title')}<br /><span className="text-gradient">JustMe</span></h2>
+            <p>{t('login.subtitle')}</p>
           </motion.div>
         </div>
       </div>
@@ -92,18 +95,21 @@ export default function Login() {
         transition={{ duration: 0.6 }}
       >
         <div className="login-form-container">
-          <Link to="/" className="login-back-brand">
-            <span className="nav-logo-icon"><Sparkles size={20} /></span>
-            <span className="nav-logo-text" style={{ color: 'var(--neutral-900)' }}>JustMe</span>
-          </Link>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Link to="/" className="login-back-brand">
+              <span className="nav-logo-icon"><Sparkles size={20} /></span>
+              <span className="nav-logo-text" style={{ color: 'var(--neutral-900)' }}>JustMe</span>
+            </Link>
+            <LanguageToggle size="sm" />
+          </div>
 
-          <h1>Sign in</h1>
-          <p className="login-subtitle">Enter your credentials to access your account</p>
+          <h1>{t('login.signIn')}</h1>
+          <p className="login-subtitle">{t('login.signInSub')}</p>
 
           <form onSubmit={handleLogin} className="login-form">
             <div className="form-field">
               <Input
-                label="Email address"
+                label={t('login.email')}
                 type="email"
                 icon={<Mail size={18} />}
                 value={email}
@@ -122,7 +128,7 @@ export default function Login() {
 
             <div className="form-field">
               <Input
-                label="Password"
+                label={t('login.password')}
                 type={showPwd ? 'text' : 'password'}
                 icon={<Lock size={18} />}
                 iconRight={
@@ -157,15 +163,15 @@ export default function Login() {
             </AnimatePresence>
 
             <div className="login-options">
-              <label className="login-remember"><input type="checkbox" /> Remember me</label>
-              <a href="#" className="login-forgot">Forgot password?</a>
+              <label className="login-remember"><input type="checkbox" /> {t('login.remember')}</label>
+              <a href="#" className="login-forgot">{t('login.forgot')}</a>
             </div>
             <Button type="submit" fullWidth loading={loading} size="lg" iconRight={<ArrowRight size={18} />}>
-              Sign In
+              {t('login.btn')}
             </Button>
           </form>
 
-          <div className="login-divider"><span>or continue with</span></div>
+          <div className="login-divider"><span>{t('login.or')}</span></div>
 
           <div className="social-buttons">
             <button className="social-btn">
@@ -179,7 +185,7 @@ export default function Login() {
           </div>
 
           <p className="login-signup">
-            Don't have an account? <Link to="/register">Sign up</Link>
+            {t('login.noAccount')} <Link to="/register">{t('login.signUpLink')}</Link>
           </p>
         </div>
       </motion.div>

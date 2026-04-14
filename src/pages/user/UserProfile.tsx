@@ -9,6 +9,7 @@ import { userService } from '../../services/userService';
 import { useNotification } from '../../context/NotificationContext';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import './UserProfile.css';
 
 export default function UserProfile() {
@@ -16,6 +17,7 @@ export default function UserProfile() {
   const { bookings } = useBookings();
   const navigate = useNavigate();
   const { notify } = useNotification();
+  const { t } = useTranslation();
 
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');
@@ -62,9 +64,9 @@ export default function UserProfile() {
       // Update local user state
       setUser({ ...user, name: editName, phone: editPhone });
       setEditing(false);
-      notify('success', 'Profile updated', 'Your profile has been saved successfully.');
+      notify('success', t('userProfile.successProfile'), t('userProfile.successProfileDesc'));
     } catch (err: any) {
-      notify('error', 'Error', err?.response?.data?.message || 'Failed to update profile');
+      notify('error', t('userProfile.errorTitle'), err?.response?.data?.message || t('userProfile.errorUpdate'));
     } finally {
       setSaving(false);
     }
@@ -79,15 +81,15 @@ export default function UserProfile() {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           });
-          notify('success', 'Location saved', 'Your location has been updated.');
+          notify('success', t('userProfile.successLoc'), t('userProfile.successLocDesc'));
         } catch {
-          notify('error', 'Error', 'Failed to save location');
+          notify('error', t('userProfile.errorTitle'), t('userProfile.errorLoc'));
         } finally {
           setDetectingLocation(false);
         }
       },
       () => {
-        notify('error', 'Error', 'Could not detect your location');
+        notify('error', t('userProfile.errorTitle'), t('userProfile.errorLocDetect'));
         setDetectingLocation(false);
       }
     );
@@ -119,8 +121,8 @@ export default function UserProfile() {
               style={{ width: '100%', padding: '8px 12px', marginBottom: '8px', borderRadius: '8px', border: '1px solid var(--neutral-200)', background: 'var(--neutral-0)', color: 'var(--neutral-900)' }}
             />
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-              <Button size="sm" onClick={handleSaveProfile} loading={saving} icon={<Save size={14} />}>Save</Button>
-              <Button size="sm" variant="ghost" onClick={() => setEditing(false)} icon={<X size={14} />}>Cancel</Button>
+              <Button size="sm" onClick={handleSaveProfile} loading={saving} icon={<Save size={14} />}>{t('userProfile.save')}</Button>
+              <Button size="sm" variant="ghost" onClick={() => setEditing(false)} icon={<X size={14} />}>{t('userProfile.cancel')}</Button>
             </div>
           </div>
         ) : (
@@ -132,16 +134,16 @@ export default function UserProfile() {
               setEditName(user?.name || '');
               setEditPhone(user?.phone || '');
               setEditing(true);
-            }}>Edit Profile</Button>
+            }}>{t('userProfile.edit')}</Button>
           </>
         )}
       </motion.div>
 
       {/* Stats */}
       <div className="profile-stats">
-        <div className="stat-item"><span className="stat-val">{bookings.filter(b => b.status === 'completed').length}</span><span className="stat-label">Bookings</span></div>
-        <div className="stat-item"><span className="stat-val">{favorites.length}</span><span className="stat-label">Favorites</span></div>
-        <div className="stat-item"><span className="stat-val">{bookings.filter(b => b.status === 'completed').length}</span><span className="stat-label">Reviews</span></div>
+        <div className="stat-item"><span className="stat-val">{bookings.filter(b => b.status === 'completed').length}</span><span className="stat-label">{t('userProfile.bookings')}</span></div>
+        <div className="stat-item"><span className="stat-val">{favorites.length}</span><span className="stat-label">{t('userProfile.favorites')}</span></div>
+        <div className="stat-item"><span className="stat-val">{bookings.filter(b => b.status === 'completed').length}</span><span className="stat-label">{t('userProfile.reviews')}</span></div>
       </div>
 
       {/* Become Professional CTA */}
@@ -150,11 +152,11 @@ export default function UserProfile() {
           <Card variant="gradient" padding="md" className="become-pro-cta">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: 'var(--text-lg)', color: 'var(--neutral-0)' }}>Become a Professional</h3>
-                <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'rgba(255,255,255,0.8)' }}>Offer your services and start earning today.</p>
+                <h3 style={{ margin: 0, fontSize: 'var(--text-lg)', color: 'var(--neutral-0)' }}>{t('userProfile.becomePro')}</h3>
+                <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'rgba(255,255,255,0.8)' }}>{t('userProfile.becomeProDesc')}</p>
               </div>
               <Button size="sm" variant="primary" onClick={() => setShowBecomeProModal(true)}>
-                Get Started
+                {t('userProfile.getStarted')}
               </Button>
             </div>
           </Card>
@@ -164,22 +166,22 @@ export default function UserProfile() {
       {verificationStatus === 'pending' && (
         <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 'var(--radius-md)' }}>
           <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: '#b45309' }}>
-            ⏳ Tu solicitud para ser profesional está siendo revisada.
+            {t('userProfile.pendingRev')}
           </p>
         </div>
       )}
 
       {/* Location */}
       <section className="profile-section">
-        <h2><MapPin size={18} /> Location</h2>
+        <h2><MapPin size={18} /> {t('userProfile.location')}</h2>
         <Button size="sm" variant="secondary" icon={<Navigation size={14} />} onClick={handleDetectLocation} loading={detectingLocation}>
-          {detectingLocation ? 'Detecting...' : 'Detect My Location'}
+          {detectingLocation ? t('userProfile.detecting') : t('userProfile.detectBtn')}
         </Button>
       </section>
 
       {/* Addresses */}
       <section className="profile-section">
-        <h2><MapPin size={18} /> Saved Addresses</h2>
+        <h2><MapPin size={18} /> {t('userProfile.savedAddr')}</h2>
         {user?.addresses && user.addresses.length > 0 ? (
           user.addresses.map((addr: any, i: number) => (
             <Card key={i} variant="default" padding="sm" className="addr-card">
@@ -188,20 +190,20 @@ export default function UserProfile() {
             </Card>
           ))
         ) : (
-          <p style={{ color: 'var(--neutral-400)', fontSize: 'var(--text-sm)' }}>No saved addresses</p>
+          <p style={{ color: 'var(--neutral-400)', fontSize: 'var(--text-sm)' }}>{t('userProfile.noAddr')}</p>
         )}
-        <Button variant="ghost" size="sm">+ Add Address</Button>
+        <Button variant="ghost" size="sm">{t('userProfile.addAddr')}</Button>
       </section>
 
       {/* Favorites */}
       <section className="profile-section">
-        <h2><Heart size={18} /> Favorite Professionals</h2>
+        <h2><Heart size={18} /> {t('userProfile.favPros')}</h2>
         {dataLoading ? (
           <div style={{ textAlign: 'center', padding: '1rem' }}>
             <Loader size={24} style={{ animation: 'spin 0.8s linear infinite', color: 'var(--primary-500)' }} />
           </div>
         ) : favorites.length === 0 ? (
-          <p style={{ color: 'var(--neutral-400)', fontSize: 'var(--text-sm)' }}>No favorites yet. Browse professionals and add them to your favorites!</p>
+          <p style={{ color: 'var(--neutral-400)', fontSize: 'var(--text-sm)' }}>{t('userProfile.noFavs')}</p>
         ) : (
           <div className="favorites-list">
             {favorites.map((pro: any) => (
@@ -217,13 +219,13 @@ export default function UserProfile() {
 
       {/* Payment History */}
       <section className="profile-section">
-        <h2><CreditCard size={18} /> Payment History</h2>
+        <h2><CreditCard size={18} /> {t('userProfile.payHistory')}</h2>
         {dataLoading ? (
           <div style={{ textAlign: 'center', padding: '1rem' }}>
             <Loader size={24} style={{ animation: 'spin 0.8s linear infinite', color: 'var(--primary-500)' }} />
           </div>
         ) : payments.length === 0 ? (
-          <p style={{ color: 'var(--neutral-400)', fontSize: 'var(--text-sm)' }}>No payments yet</p>
+          <p style={{ color: 'var(--neutral-400)', fontSize: 'var(--text-sm)' }}>{t('userProfile.noPayments')}</p>
         ) : (
           payments.slice(0, 5).map((p: any) => (
             <Card key={p.id} variant="default" padding="sm" className="payment-row">
@@ -236,7 +238,7 @@ export default function UserProfile() {
 
       {/* Account Actions */}
       <section className="profile-section" style={{ marginTop: '2rem', textAlign: 'center' }}>
-        <Button variant="danger" onClick={() => { logout(); navigate('/login'); }}>Cerrar Sesión</Button>
+        <Button variant="danger" onClick={() => { logout(); navigate('/login'); }}>{t('userProfile.logout')}</Button>
       </section>
 
       {/* Become Professional Modal */}

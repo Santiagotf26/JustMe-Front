@@ -2,37 +2,40 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Star, MapPin, Clock, Shield, Sparkles, Scissors, Heart, Hand, Droplets, Waves, Gem } from 'lucide-react';
 import { Button } from '../../components/ui';
-import { ThemeToggle } from '../../components/ui/ThemeToggle';
+import { ThemeToggle, LanguageToggle } from '../../components/ui';
+import { useTranslation } from 'react-i18next';
 import { Scene3D } from '../../components/three/Scene3D';
 import './Landing.css';
 
-const services = [
-  { name: 'Barber', icon: <Scissors size={28} />, color: '#dc2626' },
-  { name: 'Hair Stylist', icon: <Sparkles size={28} />, color: '#f59e0b' },
-  { name: 'Makeup', icon: <Star size={28} />, color: '#f59e0b' },
-  { name: 'Nails', icon: <Hand size={28} />, color: '#ec4899' },
-  { name: 'Skincare', icon: <Droplets size={28} />, color: '#10b981' },
-  { name: 'Massage', icon: <Heart size={28} />, color: '#6366f1' },
-  { name: 'Spa', icon: <Waves size={28} />, color: '#06b6d4' },
-  { name: 'Grooming', icon: <Scissors size={28} />, color: '#8b5cf6' },
-];
-
-const steps = [
-  { num: '01', title: 'Choose your service', desc: 'Browse beauty categories and find exactly what you need.' },
-  { num: '02', title: 'Find a professional', desc: 'Discover top-rated professionals near you, ranked intelligently.' },
-  { num: '03', title: 'Book instantly', desc: 'Choose date, time, and location. Get instant confirmation.' },
-  { num: '04', title: 'Enjoy the experience', desc: 'Get pampered with professional beauty services, your way.' },
-];
-
-const stats = [
-  { value: '12K+', label: 'Happy Clients' },
-  { value: '3K+', label: 'Professionals' },
-  { value: '45K+', label: 'Bookings Made' },
-  { value: '4.9', label: 'Average Rating' },
-];
-
 export default function Landing() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const services = [
+    { name: t('landing.servicesList.barber'), icon: <Scissors size={28} />, color: '#dc2626' },
+    { name: t('landing.servicesList.hairStylist'), icon: <Sparkles size={28} />, color: '#f59e0b' },
+    { name: t('landing.servicesList.makeup'), icon: <Star size={28} />, color: '#f59e0b' },
+    { name: t('landing.servicesList.nails'), icon: <Hand size={28} />, color: '#ec4899' },
+    { name: t('landing.servicesList.skincare'), icon: <Droplets size={28} />, color: '#10b981' },
+    { name: t('landing.servicesList.massage'), icon: <Heart size={28} />, color: '#6366f1' },
+    { name: t('landing.servicesList.spa'), icon: <Waves size={28} />, color: '#06b6d4' },
+    { name: t('landing.servicesList.grooming'), icon: <Scissors size={28} />, color: '#8b5cf6' },
+  ];
+
+  const steps = [
+    { num: '01', title: t('landing.steps.step1Title'), desc: t('landing.steps.step1Desc') },
+    { num: '02', title: t('landing.steps.step2Title'), desc: t('landing.steps.step2Desc') },
+    { num: '03', title: t('landing.steps.step3Title'), desc: t('landing.steps.step3Desc') },
+    { num: '04', title: t('landing.steps.step4Title'), desc: t('landing.steps.step4Desc') },
+  ];
+
+  const stats = [
+    { value: '12K+', label: t('landing.stats.clients') },
+    { value: '3K+', label: t('landing.stats.professionals') },
+    { value: '45K+', label: t('landing.stats.bookings') },
+    { value: '4.9', label: t('landing.stats.rating') },
+  ];
+
 
   return (
     <div className="landing">
@@ -48,14 +51,15 @@ export default function Landing() {
             <span className="nav-logo-text">JustMe</span>
           </div>
           <div className="nav-links">
-            <a href="#services">Services</a>
-            <a href="#how-it-works">How It Works</a>
-            <a href="#professionals">Professionals</a>
+            <a href="#services">{t('nav.services')}</a>
+            <a href="#how-it-works">{t('nav.howItWorks')}</a>
+            <a href="#professionals">{t('nav.professionals')}</a>
           </div>
           <div className="nav-actions">
+            <LanguageToggle size="sm" />
             <ThemeToggle size="sm" />
-            <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Sign In</Button>
-            <Button variant="primary" size="sm" onClick={() => navigate('/register')}>Get Started</Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>{t('nav.signIn')}</Button>
+            <Button variant="primary" size="sm" onClick={() => navigate('/register')}>{t('nav.getStarted')}</Button>
           </div>
         </nav>
 
@@ -66,21 +70,20 @@ export default function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            <span className="hero-badge"><Gem size={14} /> The future of beauty services</span>
+            <span className="hero-badge"><Gem size={14} /> {t('landing.heroBadge')}</span>
             <h1 className="hero-title">
-              Beauty professionals,<br />
-              <span className="text-gradient">at your fingertips</span>
+              {t('landing.heroTitle1')}<br />
+              <span className="text-gradient">{t('landing.heroTitle2')}</span>
             </h1>
             <p className="hero-subtitle">
-              Discover and book top-rated beauty professionals near you. 
-              Barbers, stylists, makeup artists, and more — all in one place.
+              {t('landing.heroSubtitle')}
             </p>
             <div className="hero-actions">
               <Button size="lg" onClick={() => navigate('/register')} iconRight={<ArrowRight size={20} />}>
-                Book a Professional
+                {t('landing.bookProfessional')}
               </Button>
               <Button variant="secondary" size="lg" onClick={() => navigate('/register?role=professional')}>
-                Join as Professional
+                {t('landing.joinProfessional')}
               </Button>
             </div>
             <div className="hero-stats">
@@ -110,9 +113,9 @@ export default function Landing() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <span className="section-badge">Our Services</span>
-            <h2>Everything beauty,<br /><span className="text-gradient">in one place</span></h2>
-            <p className="section-desc">From haircuts to spa treatments, find professionals for every beauty need.</p>
+            <span className="section-badge">{t('landing.servicesBadge')}</span>
+            <h2>{t('landing.servicesTitle1')}<br /><span className="text-gradient">{t('landing.servicesTitle2')}</span></h2>
+            <p className="section-desc">{t('landing.servicesDesc')}</p>
           </motion.div>
 
           <div className="services-grid">
@@ -145,8 +148,8 @@ export default function Landing() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <span className="section-badge">How It Works</span>
-            <h2>Simple, fast,<br /><span className="text-gradient">beautiful</span></h2>
+            <span className="section-badge">{t('landing.howBadge')}</span>
+            <h2>{t('landing.howTitle1')}<br /><span className="text-gradient">{t('landing.howTitle2')}</span></h2>
           </motion.div>
 
           <div className="steps-grid">
@@ -174,18 +177,18 @@ export default function Landing() {
           <div className="features-grid">
             <motion.div className="feature-card glass" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <div className="feature-icon"><MapPin size={24} /></div>
-              <h3>Location-based search</h3>
-              <p>Find professionals within 5km of your location, ranked by proximity and rating.</p>
+              <h3>{t('landing.features.feature1Title')}</h3>
+              <p>{t('landing.features.feature1Desc')}</p>
             </motion.div>
             <motion.div className="feature-card glass" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
               <div className="feature-icon"><Clock size={24} /></div>
-              <h3>Real-time availability</h3>
-              <p>See live availability and book instantly. No more back-and-forth.</p>
+              <h3>{t('landing.features.feature2Title')}</h3>
+              <p>{t('landing.features.feature2Desc')}</p>
             </motion.div>
             <motion.div className="feature-card glass" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}>
               <div className="feature-icon"><Shield size={24} /></div>
-              <h3>Verified professionals</h3>
-              <p>All professionals are verified with real reviews from real clients.</p>
+              <h3>{t('landing.features.feature3Title')}</h3>
+              <p>{t('landing.features.feature3Desc')}</p>
             </motion.div>
           </div>
         </div>
@@ -200,11 +203,11 @@ export default function Landing() {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
           >
-            <h2>Ready to transform your beauty experience?</h2>
-            <p>Join thousands of happy clients and top-rated professionals.</p>
+            <h2>{t('landing.ctaTitle')}</h2>
+            <p>{t('landing.ctaDesc')}</p>
             <div className="cta-actions">
               <Button size="lg" onClick={() => navigate('/register')} iconRight={<ArrowRight size={20} />}>
-                Get Started Free
+                {t('landing.ctaBtn')}
               </Button>
             </div>
           </motion.div>
@@ -220,29 +223,29 @@ export default function Landing() {
                 <span className="nav-logo-icon"><Sparkles size={20} /></span>
                 <span className="nav-logo-text">JustMe</span>
               </div>
-              <p>The premium marketplace for beauty and personal care services.</p>
+              <p>{t('landing.footer.desc')}</p>
             </div>
             <div className="footer-links">
-              <h4>Platform</h4>
-              <a href="#">For Clients</a>
-              <a href="#">For Professionals</a>
-              <a href="#">Pricing</a>
+              <h4>{t('landing.footer.platform')}</h4>
+              <a href="#">{t('landing.footer.forClients')}</a>
+              <a href="#">{t('landing.footer.forProfessionals')}</a>
+              <a href="#">{t('landing.footer.pricing')}</a>
             </div>
             <div className="footer-links">
-              <h4>Company</h4>
-              <a href="#">About</a>
-              <a href="#">Blog</a>
-              <a href="#">Careers</a>
+              <h4>{t('landing.footer.company')}</h4>
+              <a href="#">{t('landing.footer.about')}</a>
+              <a href="#">{t('landing.footer.blog')}</a>
+              <a href="#">{t('landing.footer.careers')}</a>
             </div>
             <div className="footer-links">
-              <h4>Support</h4>
-              <a href="#">Help Center</a>
-              <a href="#">Contact</a>
-              <a href="#">Privacy</a>
+              <h4>{t('landing.footer.support')}</h4>
+              <a href="#">{t('landing.footer.helpCenter')}</a>
+              <a href="#">{t('landing.footer.contact')}</a>
+              <a href="#">{t('landing.footer.privacy')}</a>
             </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2026 JustMe. All rights reserved.</p>
+            <p>{t('landing.footer.rights')}</p>
           </div>
         </div>
       </footer>

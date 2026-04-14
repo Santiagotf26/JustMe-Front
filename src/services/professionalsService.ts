@@ -133,4 +133,18 @@ export const professionalsService = {
       return null;
     }
   },
+
+  async getTransactions(professionalId: string) {
+    try {
+      const response = await apiClient.get(`/admin/transactions/user/${professionalId}`);
+      return response.data;
+    } catch {
+      return [];
+    }
+  },
+
+  deleteProfessional: async (id: string) => {
+    const response = await apiClient.delete(`/professionals/${id}`);
+    return response.data;
+  },
 };

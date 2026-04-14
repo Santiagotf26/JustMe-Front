@@ -1,7 +1,8 @@
 import { Bell, Search, Menu, Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../ui/Avatar';
-import { ThemeToggle } from '../ui/ThemeToggle';
+import { ThemeToggle, LanguageToggle } from '../ui';
 import './TopBar.css';
 
 interface TopBarProps {
@@ -10,6 +11,7 @@ interface TopBarProps {
 
 export function TopBar({ onMenuClick }: TopBarProps) {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   return (
     <header className="topbar">
@@ -25,10 +27,11 @@ export function TopBar({ onMenuClick }: TopBarProps) {
 
       <div className="topbar-search">
         <Search size={18} />
-        <input type="text" placeholder="Search services, professionals..." />
+        <input type="text" placeholder={t('nav.searchPlaceholder')} />
       </div>
 
       <div className="topbar-right">
+        <LanguageToggle size="sm" />
         <ThemeToggle size="sm" />
         <button className="topbar-icon-btn" id="notifications-btn">
           <Bell size={20} />

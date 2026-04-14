@@ -1,10 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileText, CheckSquare, AlertTriangle, Loader2, X, Shield } from 'lucide-react';
+import { Upload, FileText, AlertTriangle, Shield } from 'lucide-react';
 import { Modal } from './Modal';
 import { Button } from './Button';
 import { verificationService } from '../../services/verificationService';
 import { useNotification } from '../../context/NotificationContext';
+import { useTranslation } from 'react-i18next';
 import './BecomeProfessionalModal.css';
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function BecomeProfessionalModal({ isOpen, onClose, onSuccess }: Props) {
+    const { t } = useTranslation();
     const { notify } = useNotification();
     const [step, setStep] = useState(0);
     const [accepted, setAccepted] = useState(false);
@@ -35,12 +37,12 @@ export function BecomeProfessionalModal({ isOpen, onClose, onSuccess }: Props) {
                 certificationNumber: certNumber.trim(),
                 documents,
             });
-            notify('success', '¡Solicitud enviada!', 'Tu solicitud para ser profesional está siendo revisada.');
+            notify('success', t('becomePro.successTitle'), t('becomePro.successMsg'));
             onSuccess();
             handleClose();
         } catch (err: any) {
-            const msg = err?.response?.data?.message || 'Error al enviar la solicitud. Intenta de nuevo.';
-            notify('error', 'Error', msg);
+            const msg = err?.response?.data?.message || t('becomePro.errorMsg');
+            notify('error', t('sharedPages.pro.error'), msg);
         } finally {
             setLoading(false);
         }
@@ -70,20 +72,17 @@ export function BecomeProfessionalModal({ isOpen, onClose, onSuccess }: Props) {
                             <div className="bpm-icon-wrap">
                                 <Shield size={40} />
                             </div>
-                            <h2>Convertirme en Profesional</h2>
+                            <h2>{t('becomePro.title')}</h2>
                             <p className="bpm-desc">
-                                Para ofrecer tus servicios en JustMe, necesitas pasar por un proceso de verificación.
-                                Esto garantiza la seguridad y confianza de nuestros usuarios.
+                                {t('becomePro.intro')}
                             </p>
 
                             <div className="bpm-warning">
                                 <AlertTriangle size={18} />
                                 <div>
-                                    <strong>Aviso Legal</strong>
+                                    <strong>{t('becomePro.warningTitle')}</strong>
                                     <p>
-                                        Al continuar, declaras que tienes las certificaciones y habilitaciones legales
-                                        necesarias para ofrecer servicios de belleza y bienestar. JustMe no se
-                                        responsabiliza por servicios prestados sin la debida autorización.
+                                        {t('becomePro.warningMsg')}
                                     </p>
                                 </div>
                             </div>
@@ -95,8 +94,7 @@ export function BecomeProfessionalModal({ isOpen, onClose, onSuccess }: Props) {
                                     onChange={(e) => setAccepted(e.target.checked)}
                                 />
                                 <span>
-                                    Certifico que cuento con las credenciales y permisos necesarios para ejercer
-                                    como profesional de belleza y bienestar.
+                                    {t('becomePro.checkbox')}
                                 </span>
                             </label>
 
@@ -106,7 +104,7 @@ export function BecomeProfessionalModal({ isOpen, onClose, onSuccess }: Props) {
                                 size="lg"
                                 className="bpm-continue-btn"
                             >
-                                Continuar
+                                {t('sharedPages.pro.continue')}
                             </Button>
                         </motion.div>
                     )}
@@ -123,13 +121,13 @@ export function BecomeProfessionalModal({ isOpen, onClose, onSuccess }: Props) {
                             <div className="bpm-icon-wrap">
                                 <FileText size={40} />
                             </div>
-                            <h2>Documentación</h2>
+                            <h2>{t('becomePro.docsTitle')}</h2>
                             <p className="bpm-desc">
-                                Sube tus documentos de certificación y proporciona tu número de certificación profesional.
+                                {t('becomePro.docsDesc')}
                             </p>
 
                             <div className="bpm-form-group">
-                                <label>Número de Certificación *</label>
+                                <label>{t('becomePro.certLabel')} *</label>
                                 <input
                                     type="text"
                                     placeholder="Ej: CERT-2024-00123"
@@ -140,7 +138,7 @@ export function BecomeProfessionalModal({ isOpen, onClose, onSuccess }: Props) {
                             </div>
 
                             <div className="bpm-form-group">
-                                <label>Documentos (PDF o imagen)</label>
+                                <label>{t('becomePro.docsLabel')}</label>
                                 <div className="bpm-upload-area">
                                     <input
                                         type="file"
@@ -152,7 +150,7 @@ export function BecomeProfessionalModal({ isOpen, onClose, onSuccess }: Props) {
                                     />
                                     <label htmlFor="bpm-file-input" className="bpm-upload-label">
                                         <Upload size={24} />
-                                        <span>Click para subir archivos</span>
+                                        <span>{t('becomePro.clickToUpload')}</span>
                                         <span className="bpm-upload-hint">PDF, JPG o PNG (máx. 10MB)</span>
                                     </label>
                                 </div>
@@ -169,14 +167,14 @@ export function BecomeProfessionalModal({ isOpen, onClose, onSuccess }: Props) {
                             </div>
 
                             <div className="bpm-actions">
-                                <Button variant="ghost" onClick={() => setStep(0)}>Atrás</Button>
+                                <Button variant="ghost" onClick={() => setStep(0)}>{t('sharedPages.pro.back')}</Button>
                                 <Button
                                     onClick={handleSubmit}
                                     disabled={!certNumber.trim() || loading}
                                     loading={loading}
                                     size="lg"
                                 >
-                                    {loading ? 'Enviando...' : 'Enviar Solicitud'}
+                                    {loading ? t('becomePro.submitting') : t('becomePro.submitBtn')}
                                 </Button>
                             </div>
                         </motion.div>

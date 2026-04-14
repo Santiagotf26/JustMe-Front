@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Card, Badge, Button, Avatar, Rating } from '../components/ui';
 import { Modal } from '../components/ui/Modal';
-import { Home, DollarSign, Plus, Scissors, Edit, Image as ImageIcon, Trash2, Search, Activity, XCircle, Star, MapPin, CheckCircle, Clock, Loader } from 'lucide-react';
+import { Home, DollarSign, Plus, Scissors, Edit, Image as ImageIcon, Trash2, Search, Activity, XCircle, Star, MapPin, CheckCircle, Clock, Loader, TrendingUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { bookingService } from '../services/bookingService';
@@ -12,6 +12,10 @@ import { professionalsService } from '../services/professionalsService';
 import { walletService } from '../services/walletService';
 import { userService } from '../services/userService';
 import { apiClient } from '../services/api';
+import { useTranslation } from 'react-i18next';
+import { MapView } from '../components/map/MapView';
+import Swal from 'sweetalert2';
+import { Navigation } from 'lucide-react';
 
 const pageStyle: React.CSSProperties = { padding: 'var(--space-4)', maxWidth: '960px', margin: '0 auto' };
 const headerStyle: React.CSSProperties = { fontSize: 'var(--text-2xl)', fontFamily: 'var(--font-display)', fontWeight: 700, marginBottom: 'var(--space-5)' };
@@ -27,6 +31,7 @@ export function ProBookingRequests() {
   const { professionalId } = useAuth();
   const [requests, setRequests] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const { t, i18n } = useTranslation();
 
   React.useEffect(() => {
     if (!professionalId) { setLoading(false); return; }
@@ -43,11 +48,11 @@ export function ProBookingRequests() {
 
   return (
     <div style={pageStyle}>
-      <h1 style={headerStyle}>Booking Requests</h1>
+      <h1 style={headerStyle}>{t('sharedPages.pro.bookingReqTitle')}</h1>
       {requests.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--neutral-400)' }}>
           <Clock size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
-          <p>No pending booking requests</p>
+          <p>{t('sharedPages.pro.noPendingBookings')}</p>
         </div>
       ) : (
         <div style={listStyle}>
@@ -62,8 +67,8 @@ export function ProBookingRequests() {
                     <Avatar src={b.client?.avatar || b.professionalAvatar} name={clientName} size="md" />
                     <div style={flexStyle}>
                       <p style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{clientName}</p>
-                      <p style={subStyle}>{svcName} • {bDate.toLocaleDateString()} at {b.time || bDate.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}</p>
-                      <p style={subStyle}>{b.locationType === 'home' ? <><Home size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> Home Service</> : <><MapPin size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> At Studio</>} • ${b.price || 0}</p>
+                      <p style={subStyle}>{svcName} • {bDate.toLocaleDateString(i18n.language)} at {b.time || bDate.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })}</p>
+                      <p style={subStyle}>{b.locationType === 'home' ? <><Home size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {t('sharedPages.pro.homeService')}</> : <><MapPin size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {t('sharedPages.pro.atStudio')}</>} • ${b.price || 0}</p>
                     </div>
                     <Badge variant={b.status === 'confirmed' ? 'success' : 'warning'}>{b.status}</Badge>
                   </div>
@@ -80,6 +85,7 @@ export function ProBookingRequests() {
 export function ProCalendar() {
   const [bookings, setBookings] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const { t } = useTranslation();
 
   React.useEffect(() => {
     bookingService.getProfessionalBookings()
@@ -108,7 +114,7 @@ export function ProCalendar() {
 
   return (
     <div style={pageStyle}>
-      <h1 style={headerStyle}>Calendar</h1>
+      <h1 style={headerStyle}>{t('sharedPages.pro.calTitle')}</h1>
       <Card variant="default" padding="md">
         <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', overflowX: 'auto' }}>
           {days.map((d, i) => {
@@ -127,7 +133,7 @@ export function ProCalendar() {
             <div key={h} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-3)', borderBottom: '1px solid var(--neutral-100)' }}>
               <span style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-400)', width: 50 }}>{h}</span>
               <div style={{ flex: 1, height: 36, background: bookedSlots[idx] ? 'var(--primary-50)' : 'transparent', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', paddingLeft: 'var(--space-2)' }}>
-                {bookedSlots[idx] && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--primary-600)', fontWeight: 600 }}>Booking</span>}
+                {bookedSlots[idx] && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--primary-600)', fontWeight: 600 }}>{t('sharedPages.pro.booking')}</span>}
               </div>
             </div>
           ))}
@@ -141,6 +147,7 @@ export function ProEarnings() {
   const { professionalId } = useAuth();
   const [transactions, setTransactions] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const { t } = useTranslation();
 
   React.useEffect(() => {
     if (!professionalId) { setLoading(false); return; }
@@ -157,18 +164,18 @@ export function ProEarnings() {
 
   return (
     <div style={pageStyle}>
-      <h1 style={headerStyle}>Earnings</h1>
+      <h1 style={headerStyle}>{t('sharedPages.pro.earnTitle')}</h1>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
-        {[{ label: 'Total Earned', val: `$${totalEarned.toFixed(2)}` }, { label: 'Transactions', val: String(transactions.length) }].map(s => (
+        {[{ label: t('sharedPages.pro.totalEarned'), val: `$${totalEarned.toFixed(2)}` }, { label: t('sharedPages.pro.transactions'), val: String(transactions.length) }].map(s => (
           <Card key={s.label} variant="default" padding="md">
             <p style={subStyle}>{s.label}</p>
             <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 800 }}>{s.val}</p>
           </Card>
         ))}
       </div>
-      <h2 style={{ fontSize: 'var(--text-base)', marginBottom: 'var(--space-3)' }}>Recent Earnings</h2>
+      <h2 style={{ fontSize: 'var(--text-base)', marginBottom: 'var(--space-3)' }}>{t('sharedPages.pro.recentEarnings')}</h2>
       {payments.length === 0 ? (
-        <p style={{ color: 'var(--neutral-400)', textAlign: 'center', padding: '2rem' }}>No earnings yet</p>
+        <p style={{ color: 'var(--neutral-400)', textAlign: 'center', padding: '2rem' }}>{t('sharedPages.pro.noEarnings')}</p>
       ) : (
         <div style={listStyle}>
           {payments.map((t: any) => (
@@ -200,6 +207,7 @@ export function ProServices() {
   const [editingService, setEditingService] = React.useState<any>(null);
   const [formData, setFormData] = React.useState({ name: '', description: '', price: '', duration: '' });
   const [saving, setSaving] = React.useState(false);
+  const { t } = useTranslation();
 
   const fetchServices = async () => {
     if (!professionalId) return;
@@ -240,26 +248,26 @@ export function ProServices() {
       };
       if (editingService) {
         await professionalsService.updateService(professionalId, String(editingService.id), payload);
-        notify('success', 'Updated', 'Service updated successfully');
+        notify('success', t('sharedPages.pro.updateSvc'), t('proSchedule.successMsg'));
       } else {
         await professionalsService.addService(professionalId, payload);
-        notify('success', 'Created', 'Service created successfully');
+        notify('success', t('sharedPages.pro.createSvc'), t('proSchedule.successMsg'));
       }
       setShowModal(false);
       fetchServices();
     } catch (err: any) {
-      notify('error', 'Error', err?.response?.data?.message || 'Failed to save service');
+      notify('error', t('sharedPages.pro.error'), err?.response?.data?.message || t('proSchedule.errorMsg'));
     } finally { setSaving(false); }
   };
 
   const handleDelete = async (svcId: string) => {
-    if (!professionalId || !confirm('Are you sure you want to delete this service?')) return;
+    if (!professionalId || !confirm(t('sharedPages.pro.delConfirm'))) return;
     try {
       await professionalsService.deleteService(professionalId, svcId);
-      notify('success', 'Deleted', 'Service deleted');
+      notify('success', t('appointments.status.cancelled'), t('sharedPages.pro.delConfirm'));
       fetchServices();
     } catch (err: any) {
-      notify('error', 'Error', err?.response?.data?.message || 'Failed to delete service');
+      notify('error', t('sharedPages.pro.error'), err?.response?.data?.message || t('proSchedule.errorMsg'));
     }
   };
 
@@ -270,20 +278,20 @@ export function ProServices() {
   return (
     <div style={pageStyle}>
       <div style={{ ...rowStyle, justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
-        <h1 style={{ ...headerStyle, marginBottom: 0 }}>My Services</h1>
-        <Button size="sm" icon={<Plus size={16} />} onClick={handleOpenCreate} disabled={isBlocked}>Add Service</Button>
+        <h1 style={{ ...headerStyle, marginBottom: 0 }}>{t('sharedPages.pro.servicesTitle')}</h1>
+        <Button size="sm" icon={<Plus size={16} />} onClick={handleOpenCreate} disabled={isBlocked}>{t('sharedPages.pro.addService')}</Button>
       </div>
 
       {isBlocked && (
         <div style={{ padding: 'var(--space-3)', marginBottom: 'var(--space-4)', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 'var(--radius-md)', color: '#b45309', fontSize: 'var(--text-sm)' }}>
-          ⚠️ You need to be a verified professional to manage services.
+          {t('sharedPages.pro.blockedNotice')}
         </div>
       )}
 
       {services.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--neutral-400)' }}>
           <Scissors size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
-          <p>No services yet. Add your first service to start receiving bookings.</p>
+          <p>{t('sharedPages.pro.noServices')}</p>
         </div>
       ) : (
         <div style={listStyle}>
@@ -297,7 +305,7 @@ export function ProServices() {
                   <div style={flexStyle}>
                     <p style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{s.name}</p>
                     {s.description && <p style={{ ...subStyle, marginTop: 2 }}>{s.description}</p>}
-                    <p style={subStyle}><Clock size={12} style={{ display: 'inline' }} /> {s.duration || 30} min</p>
+                    <p style={subStyle}><Clock size={12} style={{ display: 'inline' }} /> {s.duration || 30} {t('sharedPages.pro.min')}</p>
                   </div>
                   <span style={{ fontWeight: 800, fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', color: 'var(--primary-600)' }}>${s.price || 0}</span>
                   <Button size="sm" variant="ghost" icon={<Edit size={14} />} onClick={() => handleOpenEdit(s)} disabled={isBlocked} />
@@ -310,29 +318,29 @@ export function ProServices() {
       )}
 
       {/* Create/Edit Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingService ? 'Edit Service' : 'Add Service'}>
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingService ? t('sharedPages.pro.editSvc') : t('sharedPages.pro.createSvc')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', minWidth: '320px', padding: 'var(--space-2)' }}>
           <div>
-            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 }}>Name *</label>
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 }}>{t('sharedPages.pro.nameLabel')}</label>
             <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. Basic Haircut" style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none' }} />
           </div>
           <div>
-            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 }}>Description</label>
-            <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={2} placeholder="Describe the service..." style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none', fontFamily: 'var(--font-body)', resize: 'vertical' }} />
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 }}>{t('sharedPages.pro.descLabel')}</label>
+            <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={2} placeholder="" style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none', fontFamily: 'var(--font-body)', resize: 'vertical' }} />
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 }}>Price (USD) *</label>
+              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 }}>{t('sharedPages.pro.priceLabel')}</label>
               <input type="number" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} placeholder="25" style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none' }} />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 }}>Duration (min) *</label>
+              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 }}>{t('sharedPages.pro.durLabel')}</label>
               <input type="number" value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })} placeholder="30" style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none' }} />
             </div>
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end', marginTop: 'var(--space-2)' }}>
-            <Button variant="ghost" onClick={() => setShowModal(false)}>Cancel</Button>
-            <Button onClick={handleSave} loading={saving}>{editingService ? 'Update' : 'Create'} Service</Button>
+            <Button variant="ghost" onClick={() => setShowModal(false)}>{t('sharedPages.pro.cancel')}</Button>
+            <Button onClick={handleSave} loading={saving}>{editingService ? t('sharedPages.pro.updateSvc') : t('sharedPages.pro.createSvc')}</Button>
           </div>
         </div>
       </Modal>
@@ -341,11 +349,12 @@ export function ProServices() {
 }
 
 export function ProPortfolio() {
+  const { t } = useTranslation();
   return (
     <div style={pageStyle}>
       <div style={{ ...rowStyle, justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
-        <h1 style={{ ...headerStyle, marginBottom: 0 }}>Portfolio</h1>
-        <Button size="sm" icon={<Plus size={16} />}>Upload</Button>
+        <h1 style={{ ...headerStyle, marginBottom: 0 }}>{t('sharedPages.pro.portTitle')}</h1>
+        <Button size="sm" icon={<Plus size={16} />}>{t('sharedPages.pro.uploadBtn')}</Button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 'var(--space-3)' }}>
         {Array.from({ length: 9 }, (_, i) => (
@@ -365,10 +374,12 @@ export function ProPortfolio() {
 export function ProProfileEditor() {
   const { user, professionalId } = useAuth();
   const { notify } = useNotification();
+  const { t } = useTranslation();
   const [saving, setSaving] = React.useState(false);
   const [formData, setFormData] = React.useState({
     name: user?.name || '', email: user?.email || '', phone: user?.phone || '',
-    bio: '', address: '', serviceRadius: 5, experience: '', specialties: ''
+    bio: '', address: '', serviceRadius: 5, experience: '', specialties: '',
+    latitude: 0, longitude: 0
   });
 
   React.useEffect(() => {
@@ -379,20 +390,61 @@ export function ProProfileEditor() {
             ...prev,
             bio: data.bio || data.description || prev.bio,
             address: data.location?.address || prev.address,
-            serviceRadius: data.serviceRadius || prev.serviceRadius,
+            serviceRadius: Number(data.serviceRadius) || prev.serviceRadius,
             experience: data.experience || prev.experience,
             specialties: data.specialties || prev.specialties,
+            latitude: Number(data.latitude) || 0,
+            longitude: Number(data.longitude) || 0,
           }));
         }
       }).catch(console.warn);
     }
   }, [professionalId]);
 
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      notify('error', 'Error', 'Geolocation is not supported by your browser');
+      return;
+    }
+
+    notify('info', t('common.loading'), 'Detecting your current coordinates...');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData(prev => ({
+          ...prev,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        }));
+        notify('success', 'Location Detected', 'Coordinates updated successfully.');
+      },
+      (error) => {
+        notify('error', 'Error', `Failed to detect location: ${error.message}`);
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
+  const handleMapClick = (lat: number, lng: number) => {
+    setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
+  };
+
   const handleSave = async () => {
     if (!professionalId) return;
     setSaving(true);
     try {
-      await professionalsService.updateProfile(professionalId, formData);
+      const cleanData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        bio: formData.bio,
+        address: formData.address,
+        serviceRadius: formData.serviceRadius,
+        experience: formData.experience,
+        specialties: formData.specialties,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+      };
+      await professionalsService.updateProfile(professionalId, cleanData);
       notify('success', 'Profile saved', 'Your professional profile has been updated.');
     } catch (e) {
       notify('error', 'Error', 'Failed to save profile');
@@ -404,18 +456,37 @@ export function ProProfileEditor() {
 
   return (
     <div style={pageStyle}>
-      <h1 style={headerStyle}>Edit Profile</h1>
+      <h1 style={headerStyle}>{t('sharedPages.pro.profParams')}</h1>
       <Card variant="default" padding="lg">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          <div><label style={labelStyle}>Full Name</label><input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={inputStyle} /></div>
-          <div><label style={labelStyle}>Bio / Description</label><textarea value={formData.bio} onChange={e => setFormData({ ...formData, bio: e.target.value })} rows={3} style={{ ...inputStyle, fontFamily: 'var(--font-body)', resize: 'vertical' }} /></div>
-          <div><label style={labelStyle}>Experience</label><input type="text" value={formData.experience} onChange={e => setFormData({ ...formData, experience: e.target.value })} placeholder="e.g. 5 years in hair styling" style={inputStyle} /></div>
-          <div><label style={labelStyle}>Specialties</label><input type="text" value={formData.specialties} onChange={e => setFormData({ ...formData, specialties: e.target.value })} placeholder="e.g. Color, Balayage, Bridal" style={inputStyle} /></div>
-          <div><label style={labelStyle}>Phone</label><input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} style={inputStyle} /></div>
-          <div><label style={labelStyle}>Email</label><input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} style={inputStyle} /></div>
-          <div><label style={labelStyle}>Address</label><input type="text" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} style={inputStyle} /></div>
-          <div><label style={labelStyle}>Service Radius (km)</label><input type="number" value={formData.serviceRadius} onChange={e => setFormData({ ...formData, serviceRadius: parseInt(e.target.value) || 0 })} style={inputStyle} /></div>
-          <Button onClick={handleSave} loading={saving}>Save Changes</Button>
+          <div><label style={labelStyle}>{t('sharedPages.pro.fullName')}</label><input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={inputStyle} /></div>
+          <div><label style={labelStyle}>{t('sharedPages.pro.bio')}</label><textarea value={formData.bio} onChange={e => setFormData({ ...formData, bio: e.target.value })} rows={3} style={{ ...inputStyle, fontFamily: 'var(--font-body)', resize: 'vertical' }} /></div>
+          <div><label style={labelStyle}>{t('sharedPages.pro.experience')}</label><input type="text" value={formData.experience} onChange={e => setFormData({ ...formData, experience: e.target.value })} placeholder="" style={inputStyle} /></div>
+          <div><label style={labelStyle}>{t('sharedPages.pro.specialties')}</label><input type="text" value={formData.specialties} onChange={e => setFormData({ ...formData, specialties: e.target.value })} placeholder="" style={inputStyle} /></div>
+          <div><label style={labelStyle}>{t('sharedPages.pro.phone')}</label><input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} style={inputStyle} /></div>
+          <div><label style={labelStyle}>{t('sharedPages.pro.email')}</label><input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} style={inputStyle} /></div>
+          <div><label style={labelStyle}>{t('sharedPages.pro.address')}</label><input type="text" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} style={inputStyle} /></div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+            <div><label style={labelStyle}>{t('sharedPages.pro.lat')}</label><input type="number" step="0.0000001" value={formData.latitude} onChange={e => setFormData({ ...formData, latitude: parseFloat(e.target.value) || 0 })} style={inputStyle} /></div>
+            <div><label style={labelStyle}>{t('sharedPages.pro.lng')}</label><input type="number" step="0.0000001" value={formData.longitude} onChange={e => setFormData({ ...formData, longitude: parseFloat(e.target.value) || 0 })} style={inputStyle} /></div>
+          </div>
+          <Button variant="secondary" icon={<Navigation size={14} />} onClick={handleDetectLocation}>{t('sharedPages.pro.detectLoc')}</Button>
+          
+          <div style={{ height: '350px', borderRadius: 'var(--radius-xl)', overflow: 'hidden', border: '1.5px solid var(--neutral-200)', position: 'relative', marginTop: 'var(--space-2)' }}>
+             <MapView 
+               professionals={[]}
+               userLocation={null}
+               isPicker={true}
+               center={{ lat: formData.latitude, lng: formData.longitude }}
+               onPickerChange={handleMapClick}
+               zoom={15}
+             />
+             <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000, background: 'rgba(255,255,255,0.9)', padding: '6px 12px', borderRadius: ' var(--radius-lg)', fontSize: '11px', fontWeight: '800', border: '1px solid var(--neutral-200)', color: 'var(--primary-600)', backdropFilter: 'blur(4px)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                {t('sharedPages.pro.mapHint')}
+             </div>
+          </div>
+
+          <Button onClick={handleSave} loading={saving} size="lg" style={{ marginTop: 'var(--space-2)' }}>{t('sharedPages.pro.saveChanges')}</Button>
         </div>
       </Card>
     </div>
@@ -427,6 +498,7 @@ export function ProReviews() {
   const [reviews, setReviews] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [stats, setStats] = React.useState({ avg: 0, count: 0 });
+  const { t } = useTranslation();
 
   React.useEffect(() => {
     if (!professionalId) return;
@@ -447,20 +519,20 @@ export function ProReviews() {
 
   return (
     <div style={pageStyle}>
-      <h1 style={headerStyle}>Reviews</h1>
+      <h1 style={headerStyle}>{t('sharedPages.pro.revTitle')}</h1>
       <Card variant="glass" padding="md">
         <div style={{ marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 'var(--space-6)', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center' }}>
             <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-4xl)', fontWeight: 800 }}>{stats.avg.toFixed(1)}</p>
             <Rating value={stats.avg} size="md" />
-            <p style={subStyle}>Based on {stats.count} reviews</p>
+            <p style={subStyle}>{t('sharedPages.pro.basedOn', { count: stats.count })}</p>
           </div>
         </div>
       </Card>
       {reviews.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--neutral-400)' }}>
           <Star size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
-          <p>No reviews yet</p>
+          <p>{t('sharedPages.pro.noRev')}</p>
         </div>
       ) : (
         <div style={{ ...listStyle, marginTop: 'var(--space-4)' }}>
@@ -488,21 +560,26 @@ export function ProReviews() {
 /* ============== ADMIN PAGES ============== */
 
 export function AdminUsers() {
-  const { notify } = useNotification();
   const [users, setUsers] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [showModal, setShowModal] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<any>(null);
   const [saving, setSaving] = React.useState(false);
+  const { t } = useTranslation();
   const [formData, setFormData] = React.useState({
     name: '', lastName: '', email: '', phone: '', docType: '', docNumber: '', isActive: true
   });
 
-  React.useEffect(() => {
-    apiClient.get('/admin/users').then(res => {
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await apiClient.get('/admin/users');
       setUsers(Array.isArray(res.data) ? res.data : (res.data?.data || []));
-    }).catch(() => setUsers([])).finally(() => setLoading(false));
-  }, []);
+    } catch { setUsers([]); }
+    finally { setLoading(false); }
+  };
+
+  React.useEffect(() => { fetchUsers(); }, []);
 
   const handleOpenEdit = (user: any) => {
     setEditingUser(user);
@@ -522,12 +599,12 @@ export function AdminUsers() {
     if (!editingUser) return;
     setSaving(true);
     try {
-      await userService.adminUpdateUser(editingUser.id, formData);
-      notify('success', 'User Updated', 'The user details have been updated successfully.');
-      setUsers(users.map(u => u.id === editingUser.id ? { ...u, ...formData } : u));
+      await apiClient.put(`/admin/users/${editingUser.id}`, formData);
+      Swal.fire({ title: t('sharedPages.admin.updated'), text: t('userProfile.successProfileDesc'), icon: 'success', confirmButtonColor: 'var(--primary-500)' });
+      fetchUsers();
       setShowModal(false);
     } catch (err: any) {
-      notify('error', 'Update Failed', err?.response?.data?.message || 'Failed to update user');
+      Swal.fire({ title: t('sharedPages.admin.error'), text: err?.response?.data?.message || t('userProfile.errorUpdate'), icon: 'error', confirmButtonColor: 'var(--primary-500)' });
     } finally {
       setSaving(false);
     }
@@ -541,37 +618,39 @@ export function AdminUsers() {
   return (
     <div style={pageStyle}>
       <div style={{ ...rowStyle, justifyContent: 'space-between', marginBottom: 'var(--space-5)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-        <h1 style={{ ...headerStyle, marginBottom: 0 }}>Users Management</h1>
+        <h1 style={{ ...headerStyle, marginBottom: 0 }}>{t('sharedPages.admin.usersTitle')}</h1>
         <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)', background: 'var(--neutral-100)', borderRadius: 'var(--radius-full)' }}>
-            <Search size={16} /><input placeholder="Search users..." style={{ border: 'none', background: 'none', outline: 'none', fontSize: 'var(--text-sm)' }} />
+            <Search size={16} /><input placeholder={t('sharedPages.admin.searchUsers')} style={{ border: 'none', background: 'none', outline: 'none', fontSize: 'var(--text-sm)' }} />
           </div>
         </div>
       </div>
       {users.length === 0 ? (
-        <p style={{ color: 'var(--neutral-400)', textAlign: 'center', padding: '2rem' }}>No users found</p>
+        <p style={{ color: 'var(--neutral-400)', textAlign: 'center', padding: '2rem' }}>{t('sharedPages.admin.noUsers')}</p>
       ) : (
         <Card variant="default" padding="none">
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--neutral-100)' }}>
-                  {['User', 'Email', 'Role', 'Status', 'Actions'].map(h => (
+                  {(t('sharedPages.admin.headersUser', { returnObjects: true }) as string[]).map(h => (
                     <th key={h} style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left', fontWeight: 600, fontSize: 'var(--text-xs)', color: 'var(--neutral-400)', textTransform: 'uppercase' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {users.map((u: any) => (
-                  <tr key={u.id} style={{ borderBottom: '1px solid var(--neutral-50)' }}>
+                  <tr key={u.id} style={{ borderBottom: '1px solid var(--neutral-50)', opacity: u.isActive !== false ? 1 : 0.6 }}>
                     <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
                       <div style={rowStyle}><Avatar name={`${u.name || ''} ${u.lastName || ''}`.trim() || 'User'} size="xs" /><span style={{ fontWeight: 500 }}>{`${u.name || ''} ${u.lastName || ''}`.trim() || 'User'}</span></div>
                     </td>
                     <td style={{ padding: 'var(--space-3) var(--space-4)', color: 'var(--neutral-500)' }}>{u.email}</td>
                     <td style={{ padding: 'var(--space-3) var(--space-4)' }}><Badge variant="primary" size="sm">{u.roles?.[0]?.name || 'user'}</Badge></td>
-                    <td style={{ padding: 'var(--space-3) var(--space-4)' }}><Badge variant={u.isActive !== false ? 'success' : 'error'} size="sm">{u.isActive !== false ? 'Active' : 'Disabled'}</Badge></td>
+                    <td style={{ padding: 'var(--space-3) var(--space-4)' }}><Badge variant={u.isActive !== false ? 'success' : 'error'} size="sm">{u.isActive !== false ? t('sharedPages.admin.active') : t('sharedPages.admin.disabled')}</Badge></td>
                     <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
-                      <Button size="sm" variant="ghost" icon={<Edit size={14} />} onClick={() => handleOpenEdit(u)}>Edit</Button>
+                      <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                        <Button size="sm" variant="ghost" icon={<Edit size={14} />} onClick={() => handleOpenEdit(u)} />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -582,47 +661,37 @@ export function AdminUsers() {
       )}
 
       {/* Edit User Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Edit User">
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={t('sharedPages.admin.editModalTitle')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', minWidth: '320px', padding: 'var(--space-2)' }}>
           <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
             <div style={{ flex: 1 }}>
-              <label style={labelStyle}>First Name *</label>
+              <label style={labelStyle}>{t('sharedPages.admin.firstName')}</label>
               <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={inputStyle} />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Last Name</label>
+              <label style={labelStyle}>{t('sharedPages.admin.lastName')}</label>
               <input type="text" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} style={inputStyle} />
             </div>
           </div>
           <div>
-            <label style={labelStyle}>Email *</label>
+            <label style={labelStyle}>{t('sharedPages.pro.email')} *</label>
             <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} style={inputStyle} />
           </div>
           <div>
-            <label style={labelStyle}>Phone</label>
+            <label style={labelStyle}>{t('sharedPages.pro.phone')}</label>
             <input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} style={inputStyle} />
-          </div>
-          <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-            <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Document Type</label>
-              <input type="text" value={formData.docType} onChange={e => setFormData({ ...formData, docType: e.target.value })} placeholder="e.g. ID, Passport" style={inputStyle} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Document Number</label>
-              <input type="text" value={formData.docNumber} onChange={e => setFormData({ ...formData, docNumber: e.target.value })} style={inputStyle} />
-            </div>
           </div>
           <div style={{ marginTop: 'var(--space-2)' }}>
             <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}>
               <input type="checkbox" checked={formData.isActive} onChange={e => setFormData({ ...formData, isActive: e.target.checked })} style={{ accentColor: 'var(--primary-500)', width: 16, height: 16 }} />
-              Active Account
+              {t('sharedPages.admin.activeAcc')}
             </label>
-            <p style={{ fontSize: '11px', color: 'var(--neutral-400)', marginTop: 2 }}>Unchecking this will disable the user's ability to log in.</p>
+            <p style={{ fontSize: '11px', color: 'var(--neutral-400)', marginTop: 2 }}>{t('sharedPages.admin.disableWarn')}</p>
           </div>
           
           <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end', marginTop: 'var(--space-3)' }}>
-            <Button variant="ghost" onClick={() => setShowModal(false)}>Cancel</Button>
-            <Button onClick={handleSave} loading={saving}>Save Changes</Button>
+            <Button variant="ghost" onClick={() => setShowModal(false)}>{t('sharedPages.pro.cancel')}</Button>
+            <Button onClick={handleSave} loading={saving}>{t('sharedPages.pro.saveChanges')}</Button>
           </div>
         </div>
       </Modal>
@@ -633,42 +702,90 @@ export function AdminUsers() {
 export function AdminProfessionals() {
   const [professionals, setProfessionals] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [showModal, setShowModal] = React.useState(false);
+  const [editingPro, setEditingPro] = React.useState<any>(null);
+  const [formData, setFormData] = React.useState({
+    name: '', lastName: '', email: '', phone: '', verified: false, isVisible: true
+  });
+  const [saving, setSaving] = React.useState(false);
+  const { t } = useTranslation();
 
-  React.useEffect(() => {
-    apiClient.get('/admin/professionals').catch(() => apiClient.get('/professionals')).then(res => {
+  const fetchProfessionals = async () => {
+    setLoading(true);
+    try {
+      const res = await apiClient.get('/admin/professionals').catch(() => apiClient.get('/professionals'));
       setProfessionals(Array.isArray(res.data) ? res.data : (res.data?.data || []));
-    }).catch(() => setProfessionals([])).finally(() => setLoading(false));
-  }, []);
+    } catch { setProfessionals([]); }
+    finally { setLoading(false); }
+  };
+
+  React.useEffect(() => { fetchProfessionals(); }, []);
+
+  const handleOpenEdit = (pro: any) => {
+    setEditingPro(pro);
+    setFormData({
+      name: pro.user?.name || pro.name || '',
+      lastName: pro.user?.lastName || '',
+      email: pro.user?.email || '',
+      phone: pro.user?.phone || '',
+      verified: pro.verified || false,
+      isVisible: pro.isVisible !== false
+    });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!editingPro) return;
+    setSaving(true);
+    try {
+      await apiClient.put(`/admin/professionals/${editingPro.id}`, formData);
+      Swal.fire(t('sharedPages.admin.updated'), t('sharedPages.admin.updatedMsg'), 'success');
+      fetchProfessionals();
+      setShowModal(false);
+    } catch {
+      Swal.fire(t('sharedPages.admin.error'), t('sharedPages.admin.errorMsg'), 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) return <div style={loadingCenter}><Loader size={28} style={{ animation: 'spin 0.8s linear infinite', color: 'var(--primary-500)' }} /></div>;
 
   return (
     <div style={pageStyle}>
-      <h1 style={headerStyle}>Professionals Management</h1>
+      <h1 style={headerStyle}>{t('sharedPages.admin.prosTitle')}</h1>
       {professionals.length === 0 ? (
-        <p style={{ color: 'var(--neutral-400)', textAlign: 'center', padding: '2rem' }}>No professionals found</p>
+        <p style={{ color: 'var(--neutral-400)', textAlign: 'center', padding: '2rem' }}>{t('sharedPages.admin.noPros')}</p>
       ) : (
         <Card variant="default" padding="none">
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--neutral-100)' }}>
-                  {['Professional', 'Rating', 'Status', 'Actions'].map(h => (
+                  {(t('sharedPages.admin.headersPro', { returnObjects: true }) as string[]).map(h => (
                     <th key={h} style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left', fontWeight: 600, fontSize: 'var(--text-xs)', color: 'var(--neutral-400)', textTransform: 'uppercase' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {professionals.map((pro: any) => (
-                  <tr key={pro.id} style={{ borderBottom: '1px solid var(--neutral-50)' }}>
+                  <tr key={pro.id} style={{ borderBottom: '1px solid var(--neutral-50)', opacity: pro.isVisible !== false ? 1 : 0.6 }}>
                     <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
                       <div style={rowStyle}><Avatar src={pro.avatar || pro.user?.avatar} name={pro.name || pro.user?.name || 'Pro'} size="xs" /><span style={{ fontWeight: 500 }}>{pro.name || pro.user?.name || 'Professional'}</span></div>
                     </td>
                     <td style={{ padding: 'var(--space-3) var(--space-4)' }}><Rating value={pro.rating || 0} size="sm" showValue /></td>
                     <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
-                      <Badge variant={pro.verified ? 'success' : 'warning'} size="sm">{pro.verified ? 'Verified' : 'Pending'}</Badge>
+                      <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                        <Badge variant={pro.verified ? 'success' : 'warning'} size="sm">{pro.verified ? t('sharedPages.admin.verified') : t('sharedPages.admin.pending')}</Badge>
+                        {pro.isVisible === false && <Badge variant="error" size="sm">{t('sharedPages.admin.disabled')}</Badge>}
+                      </div>
                     </td>
-                    <td style={{ padding: 'var(--space-3) var(--space-4)' }}><Button size="sm" variant="ghost">View</Button></td>
+                    <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
+                      <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                        <Button size="sm" variant="ghost" icon={<Edit size={14} />} onClick={() => handleOpenEdit(pro)} />
+                        <Button size="sm" variant="ghost" icon={<TrendingUp size={14} />} />
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -676,6 +793,65 @@ export function AdminProfessionals() {
           </div>
         </Card>
       )}
+
+      {/* Edit Professional Modal */}
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={t('sharedPages.admin.editModalTitle')}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', minWidth: '320px', padding: 'var(--space-2)' }}>
+          
+          <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 }}>{t('sharedPages.admin.firstName')}</label>
+              <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ width: '100%', padding: 'var(--space-2) var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-md)', outline: 'none' }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 }}>{t('sharedPages.admin.lastName')}</label>
+              <input type="text" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} style={{ width: '100%', padding: 'var(--space-2) var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-md)', outline: 'none' }} />
+            </div>
+          </div>
+
+          <div>
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 }}>{t('sharedPages.pro.email')}</label>
+            <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} style={{ width: '100%', padding: 'var(--space-2) var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-md)', outline: 'none' }} />
+          </div>
+
+          <div>
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 }}>{t('sharedPages.pro.phone')}</label>
+            <input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} style={{ width: '100%', padding: 'var(--space-2) var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-md)', outline: 'none' }} />
+          </div>
+
+          <div style={{ background: 'var(--neutral-50)', padding: 'var(--space-3)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={formData.verified} 
+                onChange={(e) => setFormData(prev => ({ ...prev, verified: e.target.checked }))} 
+                style={{ width: 18, height: 18, accentColor: 'var(--primary-500)' }} 
+              />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontWeight: 600 }}>{t('sharedPages.admin.verified')}</span>
+                <span style={{ fontSize: '11px', color: 'var(--neutral-400)' }}>Marcar como profesional verificado</span>
+              </div>
+            </label>
+            <div style={{ height: '1px', background: 'var(--neutral-200)' }} />
+            <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={formData.isVisible} 
+                onChange={(e) => setFormData(prev => ({ ...prev, isVisible: e.target.checked }))} 
+                style={{ width: 18, height: 18, accentColor: 'var(--primary-500)' }} 
+              />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontWeight: 600 }}>Visibilidad Pública (Activo)</span>
+                <span style={{ fontSize: '11px', color: 'var(--neutral-400)' }}>Los clientes pueden ver este perfil</span>
+              </div>
+            </label>
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end', marginTop: 'var(--space-2)' }}>
+            <Button variant="ghost" onClick={() => setShowModal(false)}>{t('sharedPages.pro.cancel')}</Button>
+            <Button onClick={handleSave} loading={saving}>{t('sharedPages.pro.saveChanges')}</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -683,46 +859,120 @@ export function AdminProfessionals() {
 export function AdminServices() {
   const [categories, setCategories] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [showModal, setShowModal] = React.useState(false);
+  const [editingSvc, setEditingSvc] = React.useState<any>(null);
+  const [formData, setFormData] = React.useState<any>({ name: '', description: '', category: '', isActive: true });
+  const [saving, setSaving] = React.useState(false);
+  const { t } = useTranslation();
 
-  React.useEffect(() => {
-    apiClient.get('/services/categories').catch(() => apiClient.get('/services')).then(res => {
+  const fetchCategories = async () => {
+    setLoading(true);
+    try {
+      const res = await apiClient.get('/services/categories');
       setCategories(Array.isArray(res.data) ? res.data : (res.data?.data || []));
-    }).catch(() => setCategories([])).finally(() => setLoading(false));
-  }, []);
+    } catch { setCategories([]); }
+    finally { setLoading(false); }
+  };
+
+  React.useEffect(() => { fetchCategories(); }, []);
+
+  const handleOpenEdit = (svc: any) => {
+    setEditingSvc(svc);
+    setFormData({ name: svc.name || '', description: svc.description || '', category: svc.category || '', isActive: svc.isActive !== false });
+    setShowModal(true);
+  };
+
+  const handleOpenCreate = () => {
+    setEditingSvc(null);
+    setFormData({ name: '', description: '', category: 'general', isActive: true });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.name || !formData.category) return;
+    setSaving(true);
+    try {
+      if (editingSvc) {
+        // En lugar de usar el endpoint público /services/categories, usamos el de admin para el estado
+        await apiClient.patch(`/admin/services/${editingSvc.id}`, formData);
+        Swal.fire(t('sharedPages.admin.updated'), t('sharedPages.admin.updatedMsg'), 'success');
+      } else {
+        await apiClient.post('/services/categories', formData);
+        Swal.fire(t('sharedPages.pro.createSvc'), t('proSchedule.successMsg'), 'success');
+      }
+      setShowModal(false);
+      fetchCategories();
+    } catch {
+      Swal.fire(t('sharedPages.admin.error'), t('sharedPages.admin.errorMsg'), 'error');
+    } finally { setSaving(false); }
+  };
 
   if (loading) return <div style={loadingCenter}><Loader size={28} style={{ animation: 'spin 0.8s linear infinite', color: 'var(--primary-500)' }} /></div>;
 
   return (
     <div style={pageStyle}>
       <div style={{ ...rowStyle, justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
-        <h1 style={{ ...headerStyle, marginBottom: 0 }}>Service Categories</h1>
-        <Button size="sm" icon={<Plus size={16} />}>Add Category</Button>
+        <h1 style={{ ...headerStyle, marginBottom: 0 }}>{t('sharedPages.admin.svcTitle')}</h1>
+        <Button size="sm" icon={<Plus size={16} />} onClick={handleOpenCreate}>{t('sharedPages.admin.addCat')}</Button>
       </div>
       {categories.length === 0 ? (
-        <p style={{ color: 'var(--neutral-400)', textAlign: 'center', padding: '2rem' }}>No service categories configured</p>
+        <p style={{ color: 'var(--neutral-400)', textAlign: 'center', padding: '2rem' }}>{t('sharedPages.admin.noCats')}</p>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-3)' }}>
           {categories.map((svc: any, i: number) => (
             <motion.div key={svc.id || i} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-              <Card variant="default" padding="md">
-                <div style={rowStyle}>
-                  <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-lg)', background: 'var(--primary-50)', color: 'var(--primary-500)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Scissors size={20} />
+              <div style={{ opacity: svc.isActive === false ? 0.6 : 1 }}>
+                <Card variant="default" padding="md">
+                  <div style={rowStyle}>
+                    <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-lg)', background: svc.isActive === false ? 'var(--neutral-100)' : 'var(--primary-50)', color: svc.isActive === false ? 'var(--neutral-400)' : 'var(--primary-500)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Scissors size={20} />
+                    </div>
+                    <div style={flexStyle}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <p style={{ fontWeight: 600 }}>{svc.name}</p>
+                        {svc.isActive === false && <Badge variant="error" size="sm">Inactivo</Badge>}
+                      </div>
+                      <p style={subStyle}>{svc.description || t('sharedPages.admin.noDesc')}</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                      <Button size="sm" variant="ghost" icon={<Edit size={14} />} onClick={() => handleOpenEdit(svc)} />
+                    </div>
                   </div>
-                  <div style={flexStyle}>
-                    <p style={{ fontWeight: 600 }}>{svc.name}</p>
-                    <p style={subStyle}>{svc.description || 'No description'}</p>
-                  </div>
-                  <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
-                    <Button size="sm" variant="ghost" icon={<Edit size={14} />} />
-                    <Button size="sm" variant="ghost" icon={<Trash2 size={14} />} />
-                  </div>
-                </div>
-              </Card>
+                </Card>
+              </div>
             </motion.div>
           ))}
         </div>
       )}
+
+      {/* Edit Category Modal */}
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingSvc ? t('sharedPages.admin.editSvcTitle') : t('sharedPages.admin.addCat')}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', minWidth: '320px', padding: 'var(--space-2)' }}>
+          <div>
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 }}>{t('sharedPages.pro.nameLabel')}</label>
+            <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 }}>{t('sharedPages.admin.svcCategory')}</label>
+            <input type="text" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none' }} placeholder="e.g. hair, nails, wellness" />
+          </div>
+          <div>
+            <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', display: 'block', marginBottom: 4 }}>{t('sharedPages.pro.descLabel')}</label>
+            <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={2} style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none', fontFamily: 'var(--font-body)', resize: 'vertical' }} />
+          </div>
+          <div style={{ padding: 'var(--space-2)', background: 'var(--neutral-50)', borderRadius: 'var(--radius-lg)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={formData.isActive} onChange={e => setFormData({ ...formData, isActive: e.target.checked })} style={{ width: 18, height: 18 }} />
+              <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>Estado Activo</span>
+            </label>
+            <p style={{ fontSize: '10px', color: 'var(--neutral-400)', marginLeft: 26 }}>Los servicios inactivos no aparecerán en el buscador público.</p>
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end', marginTop: 'var(--space-2)' }}>
+            <Button variant="ghost" onClick={() => setShowModal(false)}>{t('sharedPages.pro.cancel')}</Button>
+            <Button onClick={handleSave} loading={saving}>{editingSvc ? t('sharedPages.pro.updateSvc') : t('sharedPages.pro.createSvc')}</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -730,6 +980,7 @@ export function AdminServices() {
 export function AdminTransactions() {
   const [transactions, setTransactions] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const { t } = useTranslation();
 
   React.useEffect(() => {
     apiClient.get('/admin/transactions').then((res: any) => {
@@ -745,30 +996,30 @@ export function AdminTransactions() {
 
   return (
     <div style={pageStyle}>
-      <h1 style={headerStyle}>Transactions</h1>
+      <h1 style={headerStyle}>{t('sharedPages.admin.txTitle')}</h1>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
         <Card variant="default" padding="md">
-          <p style={subStyle}>Total Revenue</p>
+          <p style={subStyle}>{t('sharedPages.admin.totalRev')}</p>
           <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 800 }}>${totalRevenue.toFixed(2)}</p>
         </Card>
         <Card variant="default" padding="md">
-          <p style={subStyle}>Commissions</p>
+          <p style={subStyle}>{t('sharedPages.admin.commissions')}</p>
           <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 800, color: 'var(--success-500)' }}>+${commissions.toFixed(2)}</p>
         </Card>
         <Card variant="default" padding="md">
-          <p style={subStyle}>Total Transactions</p>
+          <p style={subStyle}>{t('sharedPages.admin.totalTx')}</p>
           <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 800 }}>{transactions.length}</p>
         </Card>
       </div>
       {transactions.length === 0 ? (
-        <p style={{ color: 'var(--neutral-400)', textAlign: 'center', padding: '2rem' }}>No transactions found</p>
+        <p style={{ color: 'var(--neutral-400)', textAlign: 'center', padding: '2rem' }}>{t('sharedPages.admin.noTx')}</p>
       ) : (
         <Card variant="default" padding="none">
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--neutral-100)' }}>
-                  {['Description', 'Type', 'Amount', 'Date', 'Status'].map(h => (
+                  {(t('sharedPages.admin.headersTx', { returnObjects: true }) as string[]).map(h => (
                     <th key={h} style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left', fontWeight: 600, fontSize: 'var(--text-xs)', color: 'var(--neutral-400)', textTransform: 'uppercase' }}>{h}</th>
                   ))}
                 </tr>
@@ -795,6 +1046,7 @@ export function AdminTransactions() {
 export function AdminAnalytics() {
   const [stats, setStats] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
+  const { t } = useTranslation();
 
   React.useEffect(() => {
     apiClient.get('/admin/analytics').then(res => setStats(res.data))
@@ -805,17 +1057,17 @@ export function AdminAnalytics() {
   const barHeights = useMemo(() => Array.from({ length: 30 }, () => 20 + Math.random() * 80), []);
 
   const metrics = [
-    { label: 'Avg. Rating', value: (stats?.avgRating || 0).toFixed(2), icon: <Star size={18} />, color: '#fbbf24' },
-    { label: 'Growth Rate', value: `${stats?.monthlyGrowth || 0}%`, icon: <Activity size={18} />, color: 'var(--success-500)' },
-    { label: 'Booking Rate', value: `${stats?.bookingRate || 0}%`, icon: <CheckCircle size={18} />, color: 'var(--primary-500)' },
-    { label: 'Cancel Rate', value: `${stats?.cancelRate || 0}%`, icon: <XCircle size={18} />, color: 'var(--error-500)' },
+    { label: t('sharedPages.admin.avgRating'), value: (stats?.avgRating || 0).toFixed(2), icon: <Star size={18} />, color: '#fbbf24' },
+    { label: t('sharedPages.admin.growthRate'), value: `${stats?.monthlyGrowth || 0}%`, icon: <Activity size={18} />, color: 'var(--success-500)' },
+    { label: t('sharedPages.admin.bookRate'), value: `${stats?.bookingRate || 0}%`, icon: <CheckCircle size={18} />, color: 'var(--primary-500)' },
+    { label: t('sharedPages.admin.cancelRate'), value: `${stats?.cancelRate || 0}%`, icon: <XCircle size={18} />, color: 'var(--error-500)' },
   ];
 
   if (loading) return <div style={loadingCenter}><Loader size={28} style={{ animation: 'spin 0.8s linear infinite', color: 'var(--primary-500)' }} /></div>;
 
   return (
     <div style={pageStyle}>
-      <h1 style={headerStyle}>Platform Analytics</h1>
+      <h1 style={headerStyle}>{t('sharedPages.admin.analytTitle')}</h1>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
         {metrics.map((m, i) => (
           <motion.div key={m.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
@@ -832,7 +1084,7 @@ export function AdminAnalytics() {
         ))}
       </div>
       <Card variant="default" padding="lg">
-        <h2 style={{ fontSize: 'var(--text-base)', marginBottom: 'var(--space-4)' }}>Bookings Over Time</h2>
+        <h2 style={{ fontSize: 'var(--text-base)', marginBottom: 'var(--space-4)' }}>{t('sharedPages.admin.bookOverTime')}</h2>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--space-1)', height: 180 }}>
           {barHeights.map((h, i) => (
             <motion.div key={i} style={{ flex: 1, borderRadius: 'var(--radius-sm) var(--radius-sm) 0 0', background: 'linear-gradient(to top, var(--primary-500), var(--primary-300))' }}
@@ -840,7 +1092,7 @@ export function AdminAnalytics() {
           ))}
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--neutral-400)' }}>
-          <span>30 days ago</span><span>Today</span>
+          <span>{t('sharedPages.admin.daysAgo')}</span><span>{t('sharedPages.admin.today')}</span>
         </div>
       </Card>
     </div>
@@ -848,23 +1100,24 @@ export function AdminAnalytics() {
 }
 
 export function AdminSettings() {
+  const { t } = useTranslation();
   return (
     <div style={pageStyle}>
-      <h1 style={headerStyle}>Settings</h1>
+      <h1 style={headerStyle}>{t('sharedPages.admin.setTitle')}</h1>
       <Card variant="default" padding="lg">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           {[
-            { label: 'Platform Name', defaultVal: 'JustMe' },
-            { label: 'Commission Rate (%)', defaultVal: '9' },
-            { label: 'Support Email', defaultVal: 'support@justme.com' },
-            { label: 'Max Search Radius (km)', defaultVal: '5' },
+            { label: t('sharedPages.admin.platName'), defaultVal: 'JustMe' },
+            { label: t('sharedPages.admin.commRate'), defaultVal: '9' },
+            { label: t('sharedPages.admin.suppEmail'), defaultVal: 'support@justme.com' },
+            { label: t('sharedPages.admin.maxRadius'), defaultVal: '5' },
           ].map(f => (
             <div key={f.label}>
               <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>{f.label}</label>
               <input type="text" defaultValue={f.defaultVal} style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none' }} />
             </div>
           ))}
-          <Button>Save Settings</Button>
+          <Button>{t('sharedPages.pro.saveChanges')}</Button>
         </div>
       </Card>
     </div>
@@ -875,6 +1128,7 @@ export function AdminSettings() {
 export function UserFavorites() {
   const [favorites, setFavorites] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const { t } = useTranslation();
 
   React.useEffect(() => {
     userService.getFavorites()
@@ -887,11 +1141,11 @@ export function UserFavorites() {
 
   return (
     <div style={pageStyle}>
-      <h1 style={headerStyle}>Favorites</h1>
+      <h1 style={headerStyle}>{t('sharedPages.user.favTitle')}</h1>
       {favorites.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--neutral-400)' }}>
           <Star size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
-          <p>No favorites yet. Browse professionals to add them!</p>
+          <p>{t('sharedPages.user.noFavs')}</p>
         </div>
       ) : (
         <div style={listStyle}>
@@ -902,10 +1156,10 @@ export function UserFavorites() {
                   <Avatar src={pro.avatar || pro.user?.avatar} name={pro.name || pro.user?.name || 'Professional'} size="md" />
                   <div style={flexStyle}>
                     <p style={{ fontWeight: 600 }}>{pro.name || pro.user?.name || 'Professional'}</p>
-                    <p style={subStyle}>{(pro.services || []).map((s: any) => typeof s === 'string' ? s : s.name).join(', ') || 'No services listed'}</p>
+                    <p style={subStyle}>{(pro.services || []).map((s: any) => typeof s === 'string' ? s : s.name).join(', ') || t('sharedPages.user.noSvcList')}</p>
                     <Rating value={pro.rating || 0} size="sm" showValue count={pro.reviewCount || 0} />
                   </div>
-                  <Button size="sm" variant="accent">Book</Button>
+                  <Button size="sm" variant="accent">{t('sharedPages.user.bookBtn')}</Button>
                 </div>
               </Card>
             </motion.div>
@@ -919,6 +1173,7 @@ export function UserFavorites() {
 export function UserPayments() {
   const [payments, setPayments] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const { t } = useTranslation();
 
   React.useEffect(() => {
     userService.getPaymentHistory()
@@ -931,11 +1186,11 @@ export function UserPayments() {
 
   return (
     <div style={pageStyle}>
-      <h1 style={headerStyle}>Payment History</h1>
+      <h1 style={headerStyle}>{t('sharedPages.user.payTitle')}</h1>
       {payments.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--neutral-400)' }}>
           <DollarSign size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
-          <p>No payments yet</p>
+          <p>{t('sharedPages.user.noPays')}</p>
         </div>
       ) : (
         <div style={listStyle}>

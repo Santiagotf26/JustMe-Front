@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { CheckCircle, Clock, XCircle, AlertTriangle } from 'lucide-react';
+import { Clock, XCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import './VerificationBanner.css';
 
 interface Props {
@@ -8,19 +9,20 @@ interface Props {
 }
 
 export function VerificationBanner({ status, rejectionReason }: Props) {
+    const { t } = useTranslation();
     if (status === 'none' || status === 'approved') return null;
 
     const config = {
         pending: {
             icon: <Clock size={20} />,
-            title: 'Verificación en proceso',
-            message: 'Tu solicitud para ser profesional está siendo revisada. Te notificaremos cuando sea aprobada.',
+            title: t('sharedPages.pro.pendingTitle'),
+            message: t('sharedPages.pro.pendingMsg'),
             className: 'vb-pending',
         },
         rejected: {
             icon: <XCircle size={20} />,
-            title: 'Verificación rechazada',
-            message: rejectionReason || 'Tu solicitud no fue aprobada. Por favor contacta soporte para más información.',
+            title: t('sharedPages.pro.rejectedTitle'),
+            message: rejectionReason || t('sharedPages.pro.rejectedMsg'),
             className: 'vb-rejected',
         },
     };

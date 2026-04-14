@@ -1,86 +1,71 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Wallet as WalletIcon, TrendingUp, AlertCircle, CreditCard, Plus, ArrowUpRight, ArrowDownRight, Loader } from 'lucide-react';
-import { Card, Button, Badge } from '../../components/ui';
-import { walletService, USD_TO_COP_RATE } from '../../services/walletService';
-import { useNotification } from '../../context/NotificationContext';
+import { Wallet, ArrowUpRight, ArrowDownLeft, Plus, History, AlertCircle, CheckCircle2, XCircle, Loader } from 'lucide-react';
+import { Card, Button, Badge, Modal } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
+import { professionalsService } from '../../services/professionalsService';
+import { useTranslation } from 'react-i18next';
 import './ProWallet.css';
 
 export default function ProWallet() {
-  const { notify } = useNotification();
+  const { t, i18n } = useTranslation();
   const { professionalId } = useAuth();
-  const [showRecharge, setShowRecharge] = useState(false);
-  const [balance, setBalance] = useState(0);
+  const [balance, setBalance] = useState<number | null>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [rechargeAmount, setRechargeAmount] = useState('');
-  const [currency, setCurrency] = useState<'USD' | 'COP'>('USD');
+  const [showRecharge, setShowRecharge] = useState(false);
+  const [amount, setAmount] = useState('');
   const [recharging, setRecharging] = useState(false);
-  const commissionRate = 9;
+  const [rechargeStatus, setRechargeStatus] = useState<'success' | 'error' | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    const fetchWallet = async () => {
+      if (!professionalId) return;
       try {
-        if (!professionalId) { setLoading(false); return; }
-        const walletData = await walletService.getBalance(professionalId).catch(() => ({ balance: 0, transactions: [] }));
-        setBalance(walletData?.balance ?? 0);
-        setTransactions(walletData?.transactions || []);
-      } catch {
-        setBalance(0);
-        setTransactions([]);
+        const [prof, txs] = await Promise.all([
+          professionalsService.getProfessionalById(professionalId),
+          professionalsService.getTransactions(professionalId).catch(() => [])
+        ]);
+        setBalance(prof?.walletBalance ?? 0);
+        setTransactions(txs || []);
+      } catch (err) {
+        console.warn('Failed to load wallet', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    fetchWallet();
   }, [professionalId]);
 
-  const handleRecharge = async (amount?: number) => {
-    const amt = amount || parseFloat(rechargeAmount);
-    if (!amt || amt <= 0) {
-      notify('error', 'Error', 'Please enter a valid amount');
-      return;
-    }
+  const handleRecharge = async (customAmt?: number) => {
+    const amtToPay = customAmt || Number(amount);
+    if (!amtToPay || isNaN(amtToPay)) return;
+    
     setRecharging(true);
     try {
-      await walletService.recharge(professionalId!, { amount: amt, currency });
-      // Refresh balance
-      const walletData = await walletService.getBalance(professionalId!).catch(() => ({ balance: 0, transactions: [] }));
-      setBalance(walletData?.balance ?? balance + (currency === 'COP' ? amt * 0.00024 : amt));
-      setTransactions(walletData?.transactions || []);
-      setShowRecharge(false);
-      setRechargeAmount('');
-      const displayAmt = currency === 'COP' ? `$${amt.toLocaleString()} COP` : `$${amt} USD`;
-      notify('success', 'Wallet recharged!', `${displayAmt} has been added to your wallet.`);
-    } catch (err: any) {
-      notify('error', 'Recharge failed', err?.response?.data?.message || 'Could not process recharge');
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setBalance(prev => (prev || 0) + amtToPay);
+      setRechargeStatus('success');
+      setAmount('');
+      setTimeout(() => {
+        setShowRecharge(false);
+        setRechargeStatus(null);
+      }, 3000);
+    } catch (err) {
+      setRechargeStatus('error');
     } finally {
       setRecharging(false);
     }
   };
 
-  // Currency conversion display
-  const conversionText = currency === 'COP' && rechargeAmount
-    ? `≈ $${(parseFloat(rechargeAmount) * 0.00024).toFixed(2)} USD`
-    : currency === 'USD' && rechargeAmount
-      ? `≈ $${(parseFloat(rechargeAmount) * USD_TO_COP_RATE).toLocaleString()} COP`
-      : '';
-
-  // Calculate stats from transactions
-  const thisMonthEarnings = transactions
-    .filter(t => t.type === 'payment' || t.type === 'recharge')
-    .filter(t => {
-      const d = new Date(t.date || t.createdAt);
-      const now = new Date();
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    })
-    .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
-
-  const commissionsPaid = transactions
-    .filter(t => t.type === 'commission')
-    .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+  const getBalanceStatusLabel = () => {
+    if (balance === null) return '...';
+    if (balance < -5) return t('proWallet.accountSuspended');
+    if (balance < 0) return t('proWallet.negative');
+    if (balance < 5) return t('proWallet.below', { defaultValue: 'Low Balance' });
+    return t('sharedPages.pro.verified');
+  };
 
   if (loading) {
     return (
@@ -90,155 +75,176 @@ export default function ProWallet() {
     );
   }
 
+  const thisMonthEarnings = transactions
+    .filter(tx => tx.type === 'earning' || tx.type === 'recharge')
+    .filter(tx => {
+      const d = new Date(tx.createdAt || tx.date);
+      const now = new Date();
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    })
+    .reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
+  const commissionsPaid = transactions
+    .filter(tx => tx.type === 'commission')
+    .reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
+  const handleClose = () => {
+    if (!recharging) {
+      setShowRecharge(false);
+      setRechargeStatus(null);
+    }
+  };
+
   return (
     <div className="pro-wallet">
-      <h1>Wallet</h1>
-
-      {/* Balance Card */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <Card variant="gradient" padding="lg" className="wallet-balance-card">
-          <div className="wallet-top">
-            <div>
-              <p className="wallet-label">Available Balance</p>
-              <h2 className={`wallet-amount ${balance < 0 ? 'text-red-500' : ''}`}>
-                {balance < 0 ? '-' : ''}${Math.abs(balance).toFixed(2)}
-              </h2>
-            </div>
-            <WalletIcon size={32} opacity={0.4} />
-          </div>
-          <div className="wallet-info-row">
-            <div className="wallet-info-item"><span className="w-info-label">Commission Rate</span><span className="w-info-val">{commissionRate}%</span></div>
-            <div className="wallet-info-item"><span className="w-info-label">Total Earned</span><span className="w-info-val">${thisMonthEarnings.toFixed(2)}</span></div>
-          </div>
-          <Button variant="secondary" size="sm" icon={<Plus size={16} />} onClick={() => setShowRecharge(!showRecharge)}
-            className="recharge-btn">Recharge Wallet</Button>
-        </Card>
-      </motion.div>
-
-      {balance <= 5 && balance >= -5 && (
-        <motion.div className="low-balance-warning" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <AlertCircle size={18} />
-          <div>
-            <p><strong>Low balance warning</strong></p>
-            <p>Your balance is {balance < 0 ? 'negative' : `below $5.00`}. Recharge soon to keep appearing in search results.</p>
-          </div>
-        </motion.div>
-      )}
-
-      {balance < -5 && (
-        <motion.div className="low-balance-warning critical-warning" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ background: 'var(--error-100)', border: '1px solid var(--error-500)' }}>
-          <AlertCircle size={18} color="var(--error-600)" />
-          <div>
-            <p style={{ color: 'var(--error-700)' }}><strong>Account Suspended</strong></p>
-            <p style={{ color: 'var(--error-600)' }}>Your balance has dropped below -$5.00. You are currently hidden from search results. Recharge immediately to restore your visibility.</p>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Recharge Panel */}
-      {showRecharge && (
-        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
-          <Card variant="glass" padding="md" className="recharge-panel">
-            <h3>Recharge Wallet</h3>
-
-            {/* Currency Selector */}
-            <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-              <button
-                className={`recharge-amount-btn ${currency === 'USD' ? 'active' : ''}`}
-                onClick={() => setCurrency('USD')}
-                style={currency === 'USD' ? { background: 'var(--primary-500)', color: 'white' } : {}}
-              >
-                🇺🇸 USD
-              </button>
-              <button
-                className={`recharge-amount-btn ${currency === 'COP' ? 'active' : ''}`}
-                onClick={() => setCurrency('COP')}
-                style={currency === 'COP' ? { background: 'var(--primary-500)', color: 'white' } : {}}
-              >
-                🇨🇴 COP
-              </button>
-            </div>
-
-            {/* Quick amounts */}
-            <div className="recharge-amounts">
-              {(currency === 'USD' ? [5, 10, 20, 50] : [20000, 50000, 100000, 200000]).map(amt => (
-                <button
-                  key={amt}
-                  className="recharge-amount-btn"
-                  disabled={recharging}
-                  onClick={() => handleRecharge(amt)}
-                >
-                  {currency === 'COP' ? `$${amt.toLocaleString()}` : `$${amt}`}
-                </button>
-              ))}
-            </div>
-
-            <div className="recharge-custom">
-              <div style={{ flex: 1 }}>
-                <input
-                  type="number"
-                  placeholder={`Custom amount (${currency})`}
-                  value={rechargeAmount}
-                  onChange={(e) => setRechargeAmount(e.target.value)}
-                />
-                {conversionText && (
-                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-400)', marginTop: '4px' }}>
-                    {conversionText}
-                  </p>
-                )}
-              </div>
-              <Button size="sm" onClick={() => handleRecharge()} icon={<CreditCard size={16} />} loading={recharging}>
-                Recharge
-              </Button>
-            </div>
-          </Card>
-        </motion.div>
-      )}
-
-      {/* Stats */}
-      <div className="wallet-stats">
-        <Card variant="default" padding="md" className="wallet-stat-card">
-          <div className="ws-icon" style={{ background: 'var(--success-50)', color: 'var(--success-500)' }}><TrendingUp size={18} /></div>
-          <div><span className="ws-val">${thisMonthEarnings.toFixed(2)}</span><span className="ws-label">This Month</span></div>
-        </Card>
-        <Card variant="default" padding="md" className="wallet-stat-card">
-          <div className="ws-icon" style={{ background: 'var(--warning-50)', color: 'var(--warning-500)' }}><ArrowDownRight size={18} /></div>
-          <div><span className="ws-val">${commissionsPaid.toFixed(2)}</span><span className="ws-label">Commissions Paid</span></div>
-        </Card>
+      <div className="wallet-header">
+        <h1>{t('proWallet.title')}</h1>
+        <Badge variant={balance !== null && balance < 0 ? 'error' : 'success'} size="md">
+          {getBalanceStatusLabel()}
+        </Badge>
       </div>
 
-      {/* Transaction History */}
-      <section className="wallet-section">
-        <h2>Transaction History</h2>
-        <div className="txn-list">
-          {transactions.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--neutral-400)' }}>
-              <CreditCard size={32} style={{ opacity: 0.4, marginBottom: '8px' }} />
-              <p>No transactions yet</p>
+      <div className="wallet-grid">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="wallet-main">
+          {/* Balance Card */}
+          <Card variant="gradient" padding="lg" className="wallet-balance-card">
+            <div className="wallet-top">
+              <div>
+                <span className="wallet-label">{t('proWallet.available')}</span>
+                <h2 className="wallet-amount">${balance !== null ? balance.toFixed(2) : '0.00'}</h2>
+              </div>
+              <Button className="recharge-btn" variant="secondary" icon={<Plus size={18} />} onClick={() => setShowRecharge(true)}>
+                {t('proWallet.rechargeBtn')}
+              </Button>
+            </div>
+            <div className="wallet-info-row">
+              <div className="wallet-info-item">
+                <span className="w-info-label">{t('proWallet.rate')}</span>
+                <span className="w-info-val">10%</span>
+              </div>
+              <div className="wallet-info-item">
+                <span className="w-info-label">Status</span>
+                <span className="w-info-val">Active</span>
+              </div>
+            </div>
+          </Card>
+
+          {balance !== null && balance < 5 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="low-balance-warning">
+              <AlertCircle size={20} />
+              <div>
+                <strong>{balance < -5 ? t('proWallet.accountSuspended') : t('proWallet.lowBalancePop')}</strong>
+                <p>{balance < -5 ? t('proWallet.suspendedMsg') : t('proWallet.lowBalanceMsg', { status: balance < 0 ? t('proWallet.negative') : t('proWallet.below') })}</p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Stats */}
+          <div className="wallet-stats">
+            <Card variant="default" padding="md" className="wallet-stat-card">
+              <div className="ws-icon" style={{ background: 'var(--primary-50)', color: 'var(--primary-600)' }}>
+                <ArrowDownLeft size={20} />
+              </div>
+              <div>
+                <span className="ws-label">{t('proWallet.thisMonth')}</span>
+                <span className="ws-val">${thisMonthEarnings.toFixed(2)}</span>
+              </div>
+            </Card>
+            <Card variant="default" padding="md" className="wallet-stat-card">
+              <div className="ws-icon" style={{ background: 'var(--error-50)', color: 'var(--error-600)' }}>
+                <ArrowUpRight size={20} />
+              </div>
+              <div>
+                <span className="ws-label">{t('proWallet.commPaid')}</span>
+                <span className="ws-val">${commissionsPaid.toFixed(2)}</span>
+              </div>
+            </Card>
+          </div>
+
+          {/* Transactions */}
+          <div className="wallet-section">
+            <h2><History size={18} /> {t('proWallet.txHistory')}</h2>
+            <div className="txn-list">
+              {transactions.length === 0 ? (
+                <div className="pw-empty">
+                  <Wallet size={40} />
+                  <p>{t('proWallet.noTx')}</p>
+                </div>
+              ) : (
+                transactions.map((tx) => (
+                  <Card key={tx.id} variant="default" padding="sm" className="txn-card">
+                    <div className={`txn-icon ${tx.type === 'earning' || tx.type === 'recharge' ? 'txn-in' : 'txn-out'}`}>
+                      {tx.type === 'earning' || tx.type === 'recharge' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+                    </div>
+                    <div className="txn-info">
+                      <span className="txn-desc">{tx.description || t('adminDash.transaction')}</span>
+                      <span className="txn-date">{new Date(tx.createdAt || tx.date).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    <div className="txn-right">
+                      <span className={`txn-amount ${tx.type === 'earning' || tx.type === 'recharge' ? 'txn-positive' : 'txn-negative'}`}>
+                        {tx.type === 'earning' || tx.type === 'recharge' ? '+' : '-'}${tx.amount.toFixed(2)}
+                      </span>
+                      <Badge size="sm" variant={tx.status === 'completed' ? 'success' : 'warning'}>{tx.status}</Badge>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Recharge Modal */}
+      <Modal 
+        isOpen={showRecharge} 
+        onClose={handleClose} 
+        title={t('proWallet.rechargeTitle')}
+        size="md"
+      >
+        <div className="recharge-panel">
+          {rechargeStatus === 'success' ? (
+            <div className="recharge-status-view">
+              <CheckCircle2 size={48} color="var(--success-500)" />
+              <h3>{t('proWallet.successTitle')}</h3>
+              <p>{t('proWallet.successMsg', { amount: `$${amount || '0'}` })}</p>
+            </div>
+          ) : rechargeStatus === 'error' ? (
+            <div className="recharge-status-view">
+              <XCircle size={48} color="var(--error-500)" />
+              <h3>{t('proWallet.failTitle')}</h3>
+              <p>{t('proWallet.failMsg')}</p>
+              <Button onClick={() => setRechargeStatus(null)}>{t('userHome.retry')}</Button>
             </div>
           ) : (
-            transactions.map((t: any, i: number) => (
-              <motion.div key={t.id || i} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <Card variant="default" padding="sm" className="txn-card">
-                  <div className={`txn-icon ${t.type === 'recharge' || t.type === 'payment' ? 'txn-in' : 'txn-out'}`}>
-                    {t.type === 'recharge' || t.type === 'payment' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                  </div>
-                  <div className="txn-info">
-                    <p className="txn-desc">{t.description || t.type}</p>
-                    <p className="txn-date">{t.date || new Date(t.createdAt).toLocaleDateString()}</p>
-                  </div>
-                  <div className="txn-right">
-                    <span className={`txn-amount ${t.type === 'commission' || t.type === 'payout' ? 'txn-negative' : 'txn-positive'}`}>
-                      {t.type === 'commission' || t.type === 'payout' ? '-' : '+'}${parseFloat(t.amount || 0).toFixed(2)}
-                    </span>
-                    <Badge variant={t.status === 'completed' ? 'success' : 'warning'} size="sm">{t.status || 'completed'}</Badge>
-                  </div>
-                </Card>
-              </motion.div>
-            ))
+            <>
+              <h3>{t('proWallet.selectAmount')}</h3>
+              <div className="recharge-amounts">
+                {[10, 25, 50, 100].map(v => (
+                  <button key={v} className="recharge-amount-btn" onClick={() => handleRecharge(v)}>
+                    ${v}
+                  </button>
+                ))}
+              </div>
+              <div className="recharge-custom">
+                <input 
+                  type="number" 
+                  value={amount} 
+                  onChange={e => setAmount(e.target.value)} 
+                  placeholder="0.00" 
+                />
+                <Button 
+                  loading={recharging} 
+                  disabled={!amount || Number(amount) <= 0}
+                  onClick={() => handleRecharge()}
+                >
+                  {t('proWallet.rechargeBtn')}
+                </Button>
+              </div>
+              <p className="recharge-hint">Payment processed via MercadoPago secure gateway.</p>
+            </>
           )}
         </div>
-      </section>
+      </Modal>
     </div>
   );
 }

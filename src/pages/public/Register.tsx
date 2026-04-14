@@ -3,16 +3,24 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Phone, ArrowRight, ArrowLeft, Check, Sparkles, Heart, Scissors, AlertCircle } from 'lucide-react';
 import { Button, Input } from '../../components/ui';
+import { LanguageToggle } from '../../components/ui';
 import { Scene3D } from '../../components/three/Scene3D';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { validateEmail, validatePassword, validateRequired, validatePhone, getPasswordStrength } from '../../utils/validators';
 import './Register.css';
 
-const steps = ['Account Type', 'Basic Info', 'Credentials'];
-
 export default function Register() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  
+  const steps = [
+    t('register.step0'),
+    t('register.step1'),
+    t('register.step2')
+  ];
+
   const { register } = useAuth();
   const { notify } = useNotification();
   const [step, setStep] = useState(0);
@@ -111,21 +119,24 @@ export default function Register() {
         <div className="login-3d-overlay" />
         <div className="login-3d-content">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-            <h2>Join the<br /><span className="text-gradient">revolution</span></h2>
-            <p>Start your beauty journey today.</p>
+            <h2>{t('register.title')}<br /><span className="text-gradient">JustMe</span></h2>
+            <p>{t('register.subtitle')}</p>
           </motion.div>
         </div>
       </div>
 
       <motion.div className="login-form-side" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
         <div className="login-form-container">
-          <Link to="/" className="login-back-brand">
-            <span className="nav-logo-icon"><Sparkles size={20} /></span>
-            <span className="nav-logo-text" style={{ color: 'var(--neutral-900)' }}>JustMe</span>
-          </Link>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Link to="/" className="login-back-brand">
+              <span className="nav-logo-icon"><Sparkles size={20} /></span>
+              <span className="nav-logo-text" style={{ color: 'var(--neutral-900)' }}>JustMe</span>
+            </Link>
+            <LanguageToggle size="sm" />
+          </div>
 
-          <h1>Create account</h1>
-          <p className="login-subtitle">Start booking or offering beauty services</p>
+          <h1>{t('register.createAcc')}</h1>
+          <p className="login-subtitle">{t('register.createAccSub')}</p>
 
           {/* Progress */}
           <div className="register-progress">
@@ -143,17 +154,17 @@ export default function Register() {
             <AnimatePresence mode="wait">
               {step === 0 && (
                 <motion.div key="step0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="register-step">
-                  <p className="step-question">How will you use JustMe?</p>
+                  <p className="step-question">{t('register.question')}</p>
                   <div className="role-cards">
                     <motion.div className={`role-card ${role === 'user' ? 'role-card-active' : ''}`} onClick={() => setRole('user')} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                       <span className="role-card-emoji"><Heart size={32} /></span>
-                      <h3>I want to book services</h3>
-                      <p>Find and book beauty professionals near you</p>
+                      <h3>{t('register.roleUserTitle')}</h3>
+                      <p>{t('register.roleUserDesc')}</p>
                     </motion.div>
                     <motion.div className={`role-card ${role === 'professional' ? 'role-card-active' : ''}`} onClick={() => setRole('professional')} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                       <span className="role-card-emoji"><Scissors size={32} /></span>
-                      <h3>I'm a professional</h3>
-                      <p>Offer your beauty services and grow your business</p>
+                      <h3>{t('register.roleProTitle')}</h3>
+                      <p>{t('register.roleProDesc')}</p>
                     </motion.div>
                   </div>
                 </motion.div>
@@ -162,7 +173,7 @@ export default function Register() {
               {step === 1 && (
                 <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="register-step">
                   <div className="form-field">
-                    <Input label="First name" icon={<User size={18} />} value={form.name} onChange={e => update('name', e.target.value)} onBlur={() => handleBlur('name')} className={touched.name && errors.name ? 'input-error' : ''} />
+                    <Input label={t('register.name')} icon={<User size={18} />} value={form.name} onChange={e => update('name', e.target.value)} onBlur={() => handleBlur('name')} className={touched.name && errors.name ? 'input-error' : ''} />
                     <AnimatePresence>
                       {touched.name && errors.name && (
                         <motion.span className="field-error" initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}>
@@ -172,7 +183,7 @@ export default function Register() {
                     </AnimatePresence>
                   </div>
                   <div className="form-field">
-                    <Input label="Last name" icon={<User size={18} />} value={form.lastName} onChange={e => update('lastName', e.target.value)} onBlur={() => handleBlur('lastName')} className={touched.lastName && errors.lastName ? 'input-error' : ''} />
+                    <Input label={t('register.lastName')} icon={<User size={18} />} value={form.lastName} onChange={e => update('lastName', e.target.value)} onBlur={() => handleBlur('lastName')} className={touched.lastName && errors.lastName ? 'input-error' : ''} />
                     <AnimatePresence>
                       {touched.lastName && errors.lastName && (
                         <motion.span className="field-error" initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}>
@@ -182,7 +193,7 @@ export default function Register() {
                     </AnimatePresence>
                   </div>
                   <div className="form-field">
-                    <Input label="Phone number" icon={<Phone size={18} />} type="tel" value={form.phone} onChange={e => update('phone', e.target.value)} onBlur={() => handleBlur('phone')} className={touched.phone && errors.phone ? 'input-error' : ''} />
+                    <Input label={t('register.phone')} icon={<Phone size={18} />} type="tel" value={form.phone} onChange={e => update('phone', e.target.value)} onBlur={() => handleBlur('phone')} className={touched.phone && errors.phone ? 'input-error' : ''} />
                     <AnimatePresence>
                       {touched.phone && errors.phone && (
                         <motion.span className="field-error" initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}>
@@ -197,7 +208,7 @@ export default function Register() {
               {step === 2 && (
                 <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="register-step">
                   <div className="form-field">
-                    <Input label="Email address" icon={<Mail size={18} />} type="email" value={form.email} onChange={e => update('email', e.target.value)} onBlur={() => handleBlur('email')} className={touched.email && errors.email ? 'input-error' : ''} />
+                    <Input label={t('register.email')} icon={<Mail size={18} />} type="email" value={form.email} onChange={e => update('email', e.target.value)} onBlur={() => handleBlur('email')} className={touched.email && errors.email ? 'input-error' : ''} />
                     <AnimatePresence>
                       {touched.email && errors.email && (
                         <motion.span className="field-error" initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}>
@@ -207,7 +218,7 @@ export default function Register() {
                     </AnimatePresence>
                   </div>
                   <div className="form-field">
-                    <Input label="Password" icon={<Lock size={18} />} type="password" value={form.password} onChange={e => update('password', e.target.value)} onBlur={() => handleBlur('password')} className={touched.password && errors.password ? 'input-error' : ''} />
+                    <Input label={t('register.password')} icon={<Lock size={18} />} type="password" value={form.password} onChange={e => update('password', e.target.value)} onBlur={() => handleBlur('password')} className={touched.password && errors.password ? 'input-error' : ''} />
                     {form.password && (
                       <div className="pwd-strength">
                         <div className="pwd-strength-bar">
@@ -225,7 +236,7 @@ export default function Register() {
                     </AnimatePresence>
                   </div>
                   <div className="form-field">
-                    <Input label="Confirm password" icon={<Lock size={18} />} type="password" value={form.confirmPassword} onChange={e => update('confirmPassword', e.target.value)} onBlur={() => handleBlur('confirmPassword')} className={touched.confirmPassword && errors.confirmPassword ? 'input-error' : ''} />
+                    <Input label={t('register.confirmPassword')} icon={<Lock size={18} />} type="password" value={form.confirmPassword} onChange={e => update('confirmPassword', e.target.value)} onBlur={() => handleBlur('confirmPassword')} className={touched.confirmPassword && errors.confirmPassword ? 'input-error' : ''} />
                     <AnimatePresence>
                       {touched.confirmPassword && errors.confirmPassword && (
                         <motion.span className="field-error" initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}>
@@ -241,17 +252,17 @@ export default function Register() {
             <div className="register-actions">
               {step > 0 && (
                 <Button type="button" variant="ghost" onClick={() => setStep(step - 1)} icon={<ArrowLeft size={18} />}>
-                  Back
+                  {t('register.btnBack')}
                 </Button>
               )}
               <Button type="submit" fullWidth={step === 0} loading={loading && step === 2} iconRight={step < 2 ? <ArrowRight size={18} /> : undefined}>
-                {step < 2 ? 'Continue' : 'Create Account'}
+                {step < 2 ? t('register.btnContinue') : t('register.btnCreate')}
               </Button>
             </div>
           </form>
 
           <p className="login-signup">
-            Already have an account? <Link to="/login">Sign in</Link>
+            {t('register.hasAccount')} <Link to="/login">{t('register.signInLink')}</Link>
           </p>
         </div>
       </motion.div>

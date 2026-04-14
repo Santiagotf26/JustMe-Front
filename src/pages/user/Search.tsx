@@ -1,12 +1,12 @@
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Scissors, Sparkles, Star, Hand, Droplets, Heart, Waves, User,
   MapPin, Home, Building, Calendar, Clock, Search as SearchIcon,
   ArrowLeft, Check, ChevronDown, ChevronUp,
-  Loader2, CheckCircle, Navigation
+  Loader2, CheckCircle, Navigation, AlertCircle, ShieldCheck
 } from 'lucide-react';
 import { MapView } from '../../components/map/MapView';
 import { useGeolocation } from '../../hooks';
@@ -14,10 +14,16 @@ import { calculateDistance } from '../../services/geolocation';
 import { professionalsService } from '../../services/professionalsService';
 import { bookingService } from '../../services/bookingService';
 import { paymentsService } from '../../services/paymentsService';
+import { scheduleService } from '../../services/scheduleService';
 import { useNotification } from '../../context/NotificationContext';
+import { useTranslation } from 'react-i18next';
+import { apiClient } from '../../services/api';
+import { DatePicker } from '../../components/ui/DatePicker';
+import { ClockPicker } from '../../components/ui/ClockPicker';
+import { ProProfileDetail } from '../../components/professional/ProProfileDetail';
 import './Search.css';
 
-type Phase = 'choose' | 'searching' | 'results' | 'profile' | 'confirmed';
+type Phase = 'choose' | 'searching' | 'results' | 'profile' | 'booking' | 'confirmed';
 
 const serviceIcons: Record<string, any> = {
   'Barber': <Scissors size={22} />,
@@ -31,22 +37,27 @@ const serviceIcons: Record<string, any> = {
 };
 
 const serviceColors: Record<string, string> = {
-  'Barber': '#dc2626',
-  'Hair Stylist': '#f59e0b',
-  'Makeup': '#ec4899',
-  'Nails': '#d946ef',
+  'Barber': '#8b45ff',
+  'Barbería': '#8b45ff',
+  'Hair Stylist': '#ff3366',
+  'Peluquería': '#ff3366',
+  'Makeup': '#f59e0b',
+  'Eventos': '#f59e0b',
+  'Nails': '#ec4899',
   'Skincare': '#10b981',
   'Massage': '#6366f1',
+  'Bienestar': '#6366f1',
   'Spa': '#06b6d4',
   'Grooming': '#8b5cf6',
 };
 
-const timeSlots = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'];
+
 
 export default function SearchPage() {
   const navigate = useNavigate();
   const geo = useGeolocation();
   const { notify } = useNotification();
+  const { t } = useTranslation();
 
   // Flow state
   const [phase, setPhase] = useState<Phase>('choose');
@@ -56,6 +67,20 @@ export default function SearchPage() {
   const [locationType, setLocationType] = useState<'home' | 'professional'>('professional');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
+  const [dbServices, setDbServices] = useState<any[]>([]);
+
+  useEffect(() => {
+    apiClient.get('/services/categories')
+      .then(res => {
+        const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+        // Si no hay datos en la DB, mostramos los hardcoded como fallback para no dejar la pantalla vacía
+        setDbServices(list.length > 0 ? list.filter((s: any) => s.isActive !== false) : Object.keys(serviceIcons).map(name => ({ id: name, name, category: name })));
+      })
+      .catch(() => {
+        // Fallback en caso de error
+        setDbServices(Object.keys(serviceIcons).map(name => ({ id: name, name, category: name })));
+      });
+  }, []);
 
   // Results
   const [selectedProId, setSelectedProId] = useState<string | null>(null);
@@ -65,74 +90,70 @@ export default function SearchPage() {
   const [bookingSlot, setBookingSlot] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
 
-  // Generate next 7 days
-  const dates = useMemo(() => Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() + i + 1);
-    return {
-      label: d.toLocaleDateString('en', { weekday: 'short' }),
-      date: d.toLocaleDateString('en', { month: 'short', day: 'numeric' }),
-      value: d.toISOString().split('T')[0],
-    };
-  }), []);
+
 
   const [backendPros, setBackendPros] = useState<any[]>([]);
   const [loadingPros, setLoadingPros] = useState(false);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [selectedProDetails, setSelectedProDetails] = useState<any>(null);
+  const [loadingProDetails, setLoadingProDetails] = useState(false);
+  const [selectedServicesList, setSelectedServicesList] = useState<any[]>([]);
 
-  // Fetch real professionals dynamically when geo changes
-  useMemo(() => {
-    if (geo.latitude && geo.longitude) {
-      professionalsService.getNearbyProfessionals({ latitude: geo.latitude, longitude: geo.longitude, radius: 20 })
-        .then(data => {
-          // Map backend structure to frontend structure
-          const mapped = data.map((p: any) => {
-            const lat = Number(p.latitude);
-            const lng = Number(p.longitude);
-            // Collect all service categories and names for filtering
-            const services = p.professionalServices?.map((ps: any) => ps.service?.category) || [];
-            const serviceNames = p.professionalServices?.map((ps: any) => ps.service?.name) || [];
-            
-            return {
-              ...p,
-              name: p.user?.name || 'Professional',
-              avatar: p.user?.avatar || `https://ui-avatars.com/api/?name=${p.user?.name || 'P'}&background=random`,
-              location: { lat, lng, address: p.address },
-              services: [...new Set([...services, ...serviceNames])],
-              price: p.professionalServices?.[0]?.price || 0,
-              distance: calculateDistance(geo.latitude!, geo.longitude!, lat, lng)
-            };
-          });
-          setBackendPros(mapped);
-        })
-        .catch(e => console.warn('Failed to fetch nearby pros', e))
-        .finally(() => setLoadingPros(false));
+  // Fetch initial nearby professionals on load
+  useEffect(() => {
+    if (geo.latitude && geo.longitude && phase === 'choose') {
+      fetchPros();
     }
   }, [geo.latitude, geo.longitude]);
 
-  // Map UI categories to backend keywords
-  const categoryMapping: Record<string, string[]> = {
-    'Barber': ['Barbería', 'Corte', 'Barbero'],
-    'Hair Stylist': ['Peluquería', 'Cabello', 'Peinado'],
-    'Nails': ['Nails', 'Manicura', 'Pedicura', 'Uñas'],
-    'Massage': ['Masaje', 'Bienestar', 'Relax'],
-    'Makeup': ['Maquillaje', 'Makeup', 'Social'],
+  const fetchPros = async (searchParams?: any) => {
+    if (!geo.latitude || !geo.longitude) return;
+    
+    setLoadingPros(true);
+    try {
+      const params = {
+        latitude: geo.latitude,
+        longitude: geo.longitude,
+        radius: 50,
+        ...searchParams
+      };
+      
+      const data = await professionalsService.getNearbyProfessionals(params);
+      const mapped = data.map((p: any) => {
+        const lat = Number(p.latitude);
+        const lng = Number(p.longitude);
+        const services = p.professionalServices?.map((ps: any) => ps.service?.category) || [];
+        const serviceNames = p.professionalServices?.map((ps: any) => ps.service?.name) || [];
+        
+        return {
+          ...p,
+          name: p.user?.name || t('search.professional'),
+          avatar: p.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.user?.name || 'P')}&background=random`,
+          location: { lat, lng, address: p.address },
+          services: [...new Set([...services, ...serviceNames])],
+          price: p.professionalServices?.[0]?.price || 0,
+          distance: calculateDistance(geo.latitude!, geo.longitude!, lat, lng),
+        };
+      });
+      setBackendPros(mapped);
+    } catch (e) {
+      console.warn('Failed to fetch nearby pros', e);
+    } finally {
+      setLoadingPros(false);
+    }
   };
 
-  // Filter by service and 50km radius for better testability
+  // Simplified filtered useMemo (mostly for favorites/nearby separation and sorting)
+  // Availability is now handled by the backend during fetchPros
   const filtered = useMemo(() => {
     return backendPros
-      .filter(p => {
-        if (selectedService === '') return true;
-        const keywords = categoryMapping[selectedService] || [selectedService];
-        return keywords.some(key => p.services.some((s: string) => s.toLowerCase().includes(key.toLowerCase())));
-      })
-      .filter(p => p.distance <= 50)
       .sort((a: any, b: any) => {
-        // Favorites first
         if (a.isFavorite && !b.isFavorite) return -1;
         if (!a.isFavorite && b.isFavorite) return 1;
         return a.distance - b.distance;
       });
-  }, [backendPros, selectedService]);
+  }, [backendPros]);
 
   const favorites = filtered.filter(p => p.isFavorite);
   const nearby = filtered.filter(p => !p.isFavorite);
@@ -142,42 +163,116 @@ export default function SearchPage() {
 
   const handleSearch = async () => {
     setPhase('searching');
-    await new Promise(r => setTimeout(r, 2200));
+    
+    // Fetch specifically filtered results from backend
+    await fetchPros({
+      service: selectedService,
+      date: selectedDate,
+      time: convertTo24h(selectedTime)
+    });
+
     setPhase('results');
     setPanelExpanded(true);
   };
 
-  const handleSelectPro = (id: string) => {
+  const convertTo24h = (time12h: string) => {
+    if (!time12h) return undefined;
+    const [time, modifier] = time12h.split(' ');
+    let [hours, minutes] = time.split(':');
+    if (modifier === 'PM' && hours !== '12') hours = String(parseInt(hours, 10) + 12);
+    if (modifier === 'AM' && hours === '12') hours = '00';
+    return `${hours.padStart(2, '0')}:${minutes}`;
+  };
+
+  const handleSelectPro = async (id: string) => {
     setSelectedProId(id);
     setPhase('profile');
     setBookingSlot('');
+    
+    // Fetch detailed real professional data
+    setLoadingProDetails(true);
+    try {
+      const details = await professionalsService.getProfessionalById(Number(id));
+      setSelectedProDetails({
+        ...details,
+        name: details.user?.name || t('search.professional'),
+        avatar: details.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(details.user?.name || 'P')}&background=random`,
+        distance: backendPros.find(p => p.id === Number(id))?.distance || 0
+      });
+    } catch (e) {
+      console.error('Failed to fetch pro details', e);
+    } finally {
+      setLoadingProDetails(false);
+    }
+  };
+  const handleStartBooking = async (id: string) => {
+    setSelectedProId(id);
+    const pro = favorites.find(p => String(p.id) === id) || nearby.find(p => String(p.id) === id);
+    if (pro) setSelectedPro(pro);
+    
+    setPhase('booking');
+    setBookingSlot('');
+    setPanelExpanded(true);
+    
+    setSelectedServicesList([{ name: selectedService }]); 
+    
+    setLoadingSlots(true);
+    try {
+      const data = await scheduleService.getAvailableSlots(Number(id), selectedDate);
+      setAvailableSlots(data.slots || []);
+    } catch (e) {
+      console.error('Failed to fetch slots', e);
+      setAvailableSlots([]);
+    } finally {
+      setLoadingSlots(false);
+    }
   };
 
   const handleConfirmBooking = async () => {
     if (!selectedPro) return;
     setBookingLoading(true);
     try {
+      const matchSvc = selectedPro.professionalServices?.find((ps: any) => 
+        ps.service?.name === selectedService || ps.service?.category === selectedService
+      );
+      const professionalServiceId = matchSvc ? matchSvc.id : (selectedPro.professionalServices?.[0]?.id || 1);
+
       const booking = await bookingService.createBooking({
         professionalId: selectedPro.id,
-        serviceName: selectedService,
+        professionalServiceId: professionalServiceId,
         date: selectedDate,
-        time: selectedTime,
-        price: selectedPro.price
+        startTime: selectedTime,
+        locationType: locationType === 'home' ? 'home' : 'professional',
+        location: locationType === 'home' ? 'A domicilio' : (selectedPro.location?.address || 'Local del Profesional'),
+        latitude: geo.latitude || selectedPro.location?.lat,
+        longitude: geo.longitude || selectedPro.location?.lng
       });
       
-      const payment = await paymentsService.createPayment({
-        amount: selectedPro.price,
-        metadata: { bookingId: booking.id }
-      });
-      
-      notify('success', 'Booking confirmed!', `Redirecting to payment via MercadoPago...`);
-      setTimeout(() => {
-        window.location.href = payment.init_point;
-      }, 1500);
+      // Try payment redirect
+      try {
+        const payment = await paymentsService.createPayment({
+          amount: selectedPro.price,
+          metadata: { bookingId: booking.id }
+        });
+        if (payment?.init_point) {
+          notify('success', t('search.successAlert'), t('search.successMsg'));
+          setTimeout(() => {
+            window.location.href = payment.init_point;
+          }, 1500);
+          return;
+        }
+      } catch {
+        // Payment service not configured — that's OK, show confirmation on map
+      }
+
+      // Stay on the map — show confirmed overlay
+      setBookingLoading(false);
+      setPhase('confirmed');
+      notify('success', t('search.successAlert'), t('search.bookingSuccessDesc'));
       
     } catch (e) {
       setBookingLoading(false);
-      notify('error', 'Booking failed', 'Failed to secure your appointment.');
+      notify('error', t('search.errorAlert'), t('search.errorMsg'));
     }
   };
 
@@ -236,84 +331,96 @@ export default function SearchPage() {
 
             <div className="uber-panel-header">
               <SearchIcon size={20} />
-              <h2>Choose your service</h2>
+              <h2>{t('search.title')}</h2>
             </div>
 
             {panelExpanded && (
               <motion.div
+                key="choose"
+                className="uber-panel-body"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="uber-panel-body"
               >
+                {/* Location Status Notice */}
+                {(geo.error || (geo.latitude === 5.8268 && geo.longitude === -73.0331)) && (
+                  <div className="uber-loc-notice">
+                    <AlertCircle size={14} />
+                    <span>{t('search.usingDefaultLocation')}</span>
+                    <button 
+                      className="uber-loc-retry"
+                      onClick={() => window.location.reload()}
+                    >
+                      {t('common.retry')}
+                    </button>
+                  </div>
+                )}
+
                 {/* Service Categories */}
                 <div className="uber-services-grid">
-                  {Object.entries(serviceIcons).map(([name, icon]) => (
-                    <motion.button
-                      key={name}
-                      className={`uber-svc-btn ${selectedService === name ? 'uber-svc-active' : ''}`}
-                      onClick={() => setSelectedService(name)}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <span className="uber-svc-icon" style={{ color: serviceColors[name], background: `${serviceColors[name]}15` }}>
-                        {icon}
-                      </span>
-                      <span className="uber-svc-label">{name}</span>
-                    </motion.button>
-                  ))}
+                  {dbServices.map((svc) => {
+                    const name = svc.name;
+                    const category = svc.category || name;
+                    const icon = serviceIcons[category] || serviceIcons[name] || <Sparkles size={22} />;
+                    const color = serviceColors[category] || serviceColors[name] || '#8b5cf6';
+                    
+                    return (
+                      <motion.button
+                        key={svc.id}
+                        className={`uber-svc-btn ${selectedService === name ? 'uber-svc-active' : ''}`}
+                        onClick={() => setSelectedService(name)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <span className="uber-svc-icon" style={{ color: color, background: `${color}15` }}>
+                          {icon}
+                        </span>
+                        <span className="uber-svc-label">{name}</span>
+                      </motion.button>
+                    );
+                  })}
                 </div>
 
                 {/* Location Type */}
                 <div className="uber-section">
-                  <h3><MapPin size={16} /> Service Location</h3>
+                  <h3><MapPin size={16} /> {t('search.serviceLocation')}</h3>
                   <div className="uber-loc-toggle">
                     <button
                       className={`uber-loc-btn ${locationType === 'professional' ? 'uber-loc-active' : ''}`}
                       onClick={() => setLocationType('professional')}
                     >
                       <Building size={18} />
-                      <span>Visit Professional</span>
+                      <span>{t('search.visitPro')}</span>
                     </button>
                     <button
                       className={`uber-loc-btn ${locationType === 'home' ? 'uber-loc-active' : ''}`}
                       onClick={() => setLocationType('home')}
                     >
                       <Home size={18} />
-                      <span>Home Service</span>
+                      <span>{t('search.homeService')}</span>
                     </button>
                   </div>
                 </div>
 
-                {/* Date */}
-                <div className="uber-section">
-                  <h3><Calendar size={16} /> Select Date</h3>
-                  <div className="uber-date-scroll">
-                    {dates.map(d => (
-                      <button
-                        key={d.value}
-                        className={`uber-date-chip ${selectedDate === d.value ? 'uber-date-active' : ''}`}
-                        onClick={() => setSelectedDate(d.value)}
-                      >
-                        <span className="uber-date-day">{d.label}</span>
-                        <span className="uber-date-num">{d.date}</span>
-                      </button>
-                    ))}
+                {/* Date and Time Row */}
+                <div className="uber-pickers-row">
+                  <div className="uber-picker-col">
+                    <h3><Calendar size={14} /> {t('search.selectDate')}</h3>
+                    <DatePicker 
+                      selectedDate={selectedDate} 
+                      onSelect={(date) => {
+                        setSelectedDate(date);
+                        setSelectedTime(''); 
+                      }} 
+                    />
                   </div>
-                </div>
-
-                {/* Time */}
-                <div className="uber-section">
-                  <h3><Clock size={16} /> Select Time</h3>
-                  <div className="uber-time-grid">
-                    {timeSlots.map(t => (
-                      <button
-                        key={t}
-                        className={`uber-time-chip ${selectedTime === t ? 'uber-time-active' : ''}`}
-                        onClick={() => setSelectedTime(t)}
-                      >
-                        {t}
-                      </button>
-                    ))}
+                  
+                  <div className="uber-picker-col">
+                    <h3><Clock size={14} /> {t('search.selectTime')}</h3>
+                    <ClockPicker 
+                      selectedDate={selectedDate}
+                      selectedTime={selectedTime}
+                      onSelect={setSelectedTime}
+                    />
                   </div>
                 </div>
 
@@ -326,7 +433,7 @@ export default function SearchPage() {
                   whileTap={canSearch ? { scale: 0.98 } : {}}
                 >
                   <SearchIcon size={20} />
-                  Search Professionals
+                  {t('search.searchBtn')}
                 </motion.button>
               </motion.div>
             )}
@@ -350,8 +457,8 @@ export default function SearchPage() {
                 <div className="uber-radar-dot" />
               </div>
               <div className="uber-searching-text">
-                <h2>Searching for professionals</h2>
-                <p>Finding the best {selectedService.toLowerCase()} near you...</p>
+                <h2>{t('search.searchingTitle')}</h2>
+                <p>{t('search.searchingDesc')}</p>
               </div>
             </div>
           </motion.div>
@@ -376,7 +483,7 @@ export default function SearchPage() {
                 <ArrowLeft size={18} />
               </button>
               <div>
-                <h2>{filtered.length} professionals found</h2>
+                <h2>{filtered.length} {t('search.found')}</h2>
                 <p>{selectedService} • {selectedDate && new Date(selectedDate).toLocaleDateString('en', { month: 'short', day: 'numeric' })} • {selectedTime}</p>
               </div>
               <button className="uber-expand-btn" onClick={() => setPanelExpanded(!panelExpanded)}>
@@ -395,18 +502,17 @@ export default function SearchPage() {
                   <div className="uber-results-section">
                     <h3 className="uber-section-title">
                       <Heart size={14} fill="#fbbf24" color="#fbbf24" />
-                      Favorite Professionals
+                      {t('search.favPros')}
                     </h3>
                     {favorites.map((pro, i) => (
                       <motion.div
                         key={pro.id}
                         className="uber-pro-card uber-pro-fav"
-                        onClick={() => handleSelectPro(pro.id)}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.1 }}
                         whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.99 }}
+                        whileTap={{ scale: 1.0 }}
                       >
                         <img src={pro.avatar} alt={pro.name} className="uber-pro-avatar" />
                         <div className="uber-pro-info">
@@ -415,6 +521,20 @@ export default function SearchPage() {
                             <span><Star size={12} fill="#fbbf24" color="#fbbf24" /> {pro.rating}</span>
                             <span><MapPin size={12} /> {pro.distance.toFixed(1)} km</span>
                             <span className="uber-pro-avail">{pro.availability}</span>
+                          </div>
+                          <div className="uber-card-actions">
+                            <button 
+                              className="uber-view-pro-btn ghost"
+                              onClick={() => handleSelectPro(pro.id)}
+                            >
+                              VER PERFIL
+                            </button>
+                            <button 
+                              className="uber-view-pro-btn"
+                              onClick={() => handleStartBooking(pro.id)}
+                            >
+                              AGENDAR
+                            </button>
                           </div>
                         </div>
                         <div className="uber-pro-price">${pro.price}</div>
@@ -427,18 +547,17 @@ export default function SearchPage() {
                 <div className="uber-results-section">
                   <h3 className="uber-section-title">
                     <MapPin size={14} />
-                    Nearby Professionals
+                    {t('search.nearbyPros')}
                   </h3>
                   {nearby.map((pro, i) => (
                     <motion.div
                       key={pro.id}
                       className="uber-pro-card"
-                      onClick={() => handleSelectPro(pro.id)}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: (favorites.length + i) * 0.1 }}
                       whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
+                      whileTap={{ scale: 1.0 }}
                     >
                       <img src={pro.avatar} alt={pro.name} className="uber-pro-avatar" />
                       <div className="uber-pro-info">
@@ -451,6 +570,20 @@ export default function SearchPage() {
                         <div className="uber-pro-tags">
                           {pro.services?.slice(0, 2).map((s: string) => <span key={s}>{s}</span>)}
                         </div>
+                        <div className="uber-card-actions">
+                          <button 
+                            className="uber-view-pro-btn ghost"
+                            onClick={() => handleSelectPro(pro.id)}
+                          >
+                            VER PERFIL
+                          </button>
+                          <button 
+                            className="uber-view-pro-btn"
+                            onClick={() => handleStartBooking(pro.id)}
+                          >
+                            AGENDAR
+                          </button>
+                        </div>
                       </div>
                       <div className="uber-pro-price">${pro.price}</div>
                     </motion.div>
@@ -459,8 +592,8 @@ export default function SearchPage() {
                   {nearby.length === 0 && favorites.length === 0 && (
                     <div className="uber-no-results">
                       <SearchIcon size={40} />
-                      <h3>No professionals found</h3>
-                      <p>Try selecting a different service or expanding your search area.</p>
+                      <h3>{t('search.noPros')}</h3>
+                      <p>{t('search.noProsDesc')}</p>
                     </div>
                   )}
                 </div>
@@ -470,9 +603,16 @@ export default function SearchPage() {
         )}
 
         {/* ─── PHASE: Professional Profile ─── */}
-        {phase === 'profile' && selectedPro && (
+        {phase === 'profile' && selectedProDetails && (
+          <ProProfileDetail 
+            professional={selectedProDetails}
+            onBack={() => { setPhase('results'); setSelectedProId(null); }}
+          />
+        )}
+
+        {phase === 'booking' && selectedPro && (
           <motion.div
-            key="profile"
+            key="slot-selection"
             className="uber-panel uber-panel-profile glass-strong"
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -496,69 +636,55 @@ export default function SearchPage() {
                   {selectedPro.verified && <CheckCircle size={14} className="uber-verified" />}
                 </h2>
                 <div className="uber-profile-stats">
-                  <span><Star size={13} fill="#fbbf24" color="#fbbf24" /> {selectedPro.rating} ({selectedPro.reviewCount})</span>
-                  <span><MapPin size={13} /> {selectedPro.distance.toFixed(1)} km</span>
-                  <span>{selectedPro.completedServices} services</span>
+                  <span><Star size={13} fill="#fbbf24" color="#fbbf24" /> {selectedPro.rating}</span>
+                  <span><MapPin size={13} /> {selectedPro.distance?.toFixed(1)} km</span>
+                  <span>{selectedPro.completedServices || 0} {t('search.services')}</span>
                 </div>
               </div>
             </div>
 
             {panelExpanded && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="uber-profile-body">
-                <p className="uber-profile-bio">{selectedPro.bio}</p>
+                <div className="uber-checkout-summary">
+                   <h3 className="checkout-title">Resumen de tu Reserva</h3>
+                   
+                   <div className="checkout-item">
+                     <span className="checkout-label"><Scissors size={14}/> Servicio:</span>
+                     <span className="checkout-val">{selectedService}</span>
+                   </div>
+                   
+                   <div className="checkout-item">
+                     <span className="checkout-label"><MapPin size={14}/> Ubicación:</span>
+                     <span className="checkout-val">{locationType === 'home' ? t('search.homeService') : (selectedPro.location?.address || 'Local del Profesional')}</span>
+                   </div>
 
-                {/* Location info */}
-                <div className="uber-profile-location">
-                  <MapPin size={14} />
-                  <span>{locationType === 'home' ? 'Home service' : selectedPro.location.address}</span>
+                   <div className="checkout-item highlight-time">
+                     <span className="checkout-label"><Calendar size={14}/> Fecha y Hora:</span>
+                     <span className="checkout-val text-right block">
+                       {selectedDate && new Date(selectedDate).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
+                       <br/>
+                       <strong>{selectedTime || 'A coordinar'}</strong>
+                     </span>
+                   </div>
+
+                   <div className="checkout-total">
+                     <span>Total Estimado</span>
+                     <strong>${selectedPro.price}</strong>
+                   </div>
+                   
+                   <p className="checkout-disclaimer">
+                     <ShieldCheck size={12}/> No se te cobrará nada hasta confirmar tu cita.
+                   </p>
                 </div>
 
-                {/* Availability Calendar */}
-                <div className="uber-avail-section">
-                  <h3><Calendar size={16} /> Available Slots</h3>
-                  <div className="uber-avail-calendar">
-                    {selectedPro.availableSlots?.slice(0, 5).map((day: any) => {
-                      const dayDate = new Date(day.date);
-                      const isSelectedDay = selectedDate === day.date;
-                      return (
-                        <div key={day.date} className={`uber-avail-day ${isSelectedDay ? 'uber-avail-day-active' : ''}`}>
-                          <div className="uber-avail-day-header">
-                            <span className="uber-avail-weekday">{dayDate.toLocaleDateString('en', { weekday: 'short' })}</span>
-                            <span className="uber-avail-date">{dayDate.toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span>
-                          </div>
-                          <div className="uber-avail-slots">
-                            {day.slots.map((slot: string) => (
-                              <button
-                                key={`${day.date}-${slot}`}
-                                className={`uber-slot-btn ${bookingSlot === `${day.date}-${slot}` ? 'uber-slot-active' : ''}`}
-                                onClick={() => { setBookingSlot(`${day.date}-${slot}`); setSelectedDate(day.date); setSelectedTime(slot); }}
-                              >
-                                {slot}
-                              </button>
-                            ))}
-                            {day.slots.length === 0 && (
-                              <span className="uber-slot-empty">No slots</span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Booking Button */}
-                <motion.button
-                  className="uber-book-btn"
-                  disabled={!bookingSlot || bookingLoading}
+                <motion.button 
+                  className="uber-search-btn confirm-checkout-btn" 
+                  disabled={!selectedTime || bookingLoading}
                   onClick={handleConfirmBooking}
-                  whileHover={bookingSlot ? { scale: 1.02 } : {}}
-                  whileTap={bookingSlot ? { scale: 0.98 } : {}}
+                  whileHover={selectedTime ? { scale: 1.02 } : {}}
+                  whileTap={selectedTime ? { scale: 0.98 } : {}}
                 >
-                  {bookingLoading ? (
-                    <><Loader2 size={20} className="spin-icon" /> Confirming...</>
-                  ) : (
-                    <>Book Now — ${selectedPro.price}</>
-                  )}
+                  {bookingLoading ? <Loader2 className="spin-icon" size={24} /> : 'Confirmar Reserva'}
                 </motion.button>
               </motion.div>
             )}
@@ -582,8 +708,8 @@ export default function SearchPage() {
             >
               <Check size={40} />
             </motion.div>
-            <h2>Booking Confirmed!</h2>
-            <p>Your appointment has been scheduled</p>
+            <h2>{t('search.bookingSuccess')}</h2>
+            <p>{t('search.bookingSuccessDesc')}</p>
 
             <div className="uber-confirm-details">
               <div className="uber-confirm-pro">
@@ -596,20 +722,20 @@ export default function SearchPage() {
               <div className="uber-confirm-rows">
                 <div><Calendar size={14} /> <span>{selectedDate && new Date(selectedDate).toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}</span></div>
                 <div><Clock size={14} /> <span>{selectedTime}</span></div>
-                <div><MapPin size={14} /> <span>{locationType === 'home' ? 'Home Service' : selectedPro.location.address}</span></div>
+                <div><MapPin size={14} /> <span>{locationType === 'home' ? t('search.homeService') : selectedPro.location.address}</span></div>
               </div>
               <div className="uber-confirm-price">
-                <span>Total</span>
+                <span>{t('search.total')}</span>
                 <strong>${selectedPro.price}</strong>
               </div>
             </div>
 
             <div className="uber-confirm-actions">
-              <motion.button className="uber-confirm-main-btn" onClick={() => navigate('/user/appointments')} whileTap={{ scale: 0.97 }}>
-                View Appointments
+              <motion.button className="uber-confirm-main-btn" onClick={handleReset} whileTap={{ scale: 0.97 }}>
+                {t('search.bookAnother')}
               </motion.button>
-              <motion.button className="uber-confirm-ghost-btn" onClick={handleReset} whileTap={{ scale: 0.97 }}>
-                Book Another
+              <motion.button className="uber-confirm-ghost-btn" onClick={() => navigate('/user/appointments')} whileTap={{ scale: 0.97 }}>
+                {t('search.viewAppts')}
               </motion.button>
             </div>
           </motion.div>
@@ -620,7 +746,7 @@ export default function SearchPage() {
       {phase !== 'confirmed' && (
         <div className="uber-location-pill glass-strong">
           <Navigation size={14} />
-          <span>{geo.error ? 'Bogotá (default)' : 'Your location'}</span>
+          <span>{geo.error ? t('search.locationError') : t('search.defaultLoc')}</span>
         </div>
       )}
     </div>

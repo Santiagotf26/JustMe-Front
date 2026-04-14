@@ -70,6 +70,8 @@ interface MapViewProps {
   selectedId?: string | null;
   zoom?: number;
   center?: { lat: number; lng: number } | null;
+  isPicker?: boolean;
+  onPickerChange?: (lat: number, lng: number) => void;
 }
 
 function RecenterMap({ lat, lng, zoom }: { lat: number; lng: number; zoom?: number }) {
@@ -80,9 +82,23 @@ function RecenterMap({ lat, lng, zoom }: { lat: number; lng: number; zoom?: numb
   return null;
 }
 
-export function MapView({ professionals, userLocation, onProfessionalClick, loading, variant = 'default', selectedId, zoom, center }: MapViewProps) {
+function MapPicker({ onChange }: { onChange: (lat: number, lng: number) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    map.on('click', (e: any) => {
+      onChange(e.latlng.lat, e.latlng.lng);
+    });
+  }, [map, onChange]);
+  return null;
+}
+
+export function MapView({ 
+  professionals, userLocation, onProfessionalClick, loading, 
+  variant = 'default', selectedId, zoom, center,
+  isPicker, onPickerChange
+}: MapViewProps) {
   const mapRef = useRef<any>(null);
-  const mapCenter = center || userLocation || { lat: 4.711, lng: -74.0721 };
+  const mapCenter = center || userLocation || { lat: 4.5709, lng: -74.2973 }; // Colombia center as fallback
   const { isDark } = useTheme();
 
   if (loading) {
@@ -90,7 +106,7 @@ export function MapView({ professionals, userLocation, onProfessionalClick, load
       <div className={`map-loading ${variant === 'fullscreen' ? 'map-loading-full' : ''}`}>
         <div className="map-loading-pulse" />
         <Navigation size={32} className="map-loading-icon" />
-        <p>Detecting your location...</p>
+        <p>Cargando mapa...</p>
       </div>
     );
   }
@@ -121,15 +137,31 @@ export function MapView({ professionals, userLocation, onProfessionalClick, load
         <RecenterMap lat={mapCenter.lat} lng={mapCenter.lng} zoom={zoom} />
 
         {/* User location marker */}
-        {userLocation && (
-          <Marker position={[userLocation.lat, userLocation.lng]} icon={createMarkerIcon('user')}>
+        {(userLocation || (isPicker && center)) && (
+          <Marker 
+            position={[
+              isPicker && center ? center.lat : userLocation?.lat || 0,
+              isPicker && center ? center.lng : userLocation?.lng || 0
+            ]} 
+            icon={createMarkerIcon(isPicker ? 'selected' : 'user')}
+            draggable={isPicker}
+            eventHandlers={isPicker ? {
+              dragend: (e) => {
+                const marker = e.target;
+                const position = marker.getLatLng();
+                onPickerChange?.(position.lat, position.lng);
+              }
+            } : {}}
+          >
             <Popup>
               <div className="map-popup-user">
-                <MapPin size={16} /> Your location
+                <MapPin size={16} /> {isPicker ? 'Drag to adjust position' : 'Your location'}
               </div>
             </Popup>
           </Marker>
         )}
+
+        {isPicker && onPickerChange && <MapPicker onChange={onPickerChange} />}
 
         {/* Professional markers */}
         {professionals.map((pro) => (
@@ -141,7 +173,7 @@ export function MapView({ professionals, userLocation, onProfessionalClick, load
               pro.isFavorite ? 'favorite' : 'pro'
             )}
             eventHandlers={{
-              click: () => onProfessionalClick?.(pro.id),
+              // Remove direct click to profile, let Leaflet open popup
             }}
           >
             <Popup>
@@ -171,7 +203,7 @@ export function MapView({ professionals, userLocation, onProfessionalClick, load
                     className="map-popup-btn"
                     onClick={() => onProfessionalClick?.(pro.id)}
                   >
-                    View Profile
+                    VIEW PERFIL
                   </button>
                 </div>
               </div>

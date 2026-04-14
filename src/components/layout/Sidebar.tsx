@@ -8,42 +8,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../ui/Avatar';
-import { ThemeToggle } from '../ui/ThemeToggle';
 import { ModeTransition } from '../ui/ModeTransition';
 import { BecomeProfessionalModal } from '../ui/BecomeProfessionalModal';
+import { useTranslation } from 'react-i18next';
 import './Sidebar.css';
-
-const userLinks = [
-  { to: '/user', icon: <Home size={20} />, label: 'Home' },
-  { to: '/user/search', icon: <Search size={20} />, label: 'Search' },
-  { to: '/user/appointments', icon: <CalendarDays size={20} />, label: 'Appointments' },
-  { to: '/user/favorites', icon: <Heart size={20} />, label: 'Favorites' },
-  { to: '/user/payments', icon: <CreditCard size={20} />, label: 'Payments' },
-  { to: '/user/rewards', icon: <Gift size={20} />, label: 'Rewards' },
-  { to: '/user/profile', icon: <UserCircle size={20} />, label: 'Profile' },
-];
-
-const proLinks = [
-  { to: '/professional', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-  { to: '/professional/calendar', icon: <CalendarDays size={20} />, label: 'Calendar' },
-  { to: '/professional/wallet', icon: <Wallet size={20} />, label: 'Wallet' },
-  { to: '/professional/services', icon: <Scissors size={20} />, label: 'Services' },
-  { to: '/professional/portfolio', icon: <ImageIcon size={20} />, label: 'Portfolio' },
-  { to: '/professional/reviews', icon: <Star size={20} />, label: 'Reviews' },
-  { to: '/professional/schedule', icon: <Clock size={20} />, label: 'Schedule' },
-  { to: '/professional/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
-  { to: '/professional/profile', icon: <UserCircle size={20} />, label: 'Profile' },
-];
-
-const adminLinks = [
-  { to: '/admin', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-  { to: '/admin/users', icon: <Users size={20} />, label: 'Users' },
-  { to: '/admin/professionals', icon: <Briefcase size={20} />, label: 'Professionals' },
-  { to: '/admin/services', icon: <Scissors size={20} />, label: 'Services' },
-  { to: '/admin/transactions', icon: <FileText size={20} />, label: 'Transactions' },
-  { to: '/admin/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
-  { to: '/admin/settings', icon: <Settings size={20} />, label: 'Settings' },
-];
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -53,12 +21,45 @@ interface SidebarProps {
 export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const { user, role, logout, switchRole, verificationStatus, refreshVerificationStatus } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [showModeTransition, setShowModeTransition] = useState(false);
   const [targetMode, setTargetMode] = useState<'user' | 'professional'>('user');
   const [showBecomeProModal, setShowBecomeProModal] = useState(false);
 
+  const userLinks = [
+    { to: '/user', icon: <Home size={20} />, label: t('sidebar.links.home') },
+    { to: '/user/search', icon: <Search size={20} />, label: t('sidebar.links.search') },
+    { to: '/user/appointments', icon: <CalendarDays size={20} />, label: t('sidebar.links.appointments') },
+    { to: '/user/favorites', icon: <Heart size={20} />, label: t('sidebar.links.favorites') },
+    { to: '/user/payments', icon: <CreditCard size={20} />, label: t('sidebar.links.payments') },
+    { to: '/user/rewards', icon: <Gift size={20} />, label: t('sidebar.links.rewards') },
+    { to: '/user/profile', icon: <UserCircle size={20} />, label: t('sidebar.links.profile') },
+  ];
+
+  const proLinks = [
+    { to: '/professional', icon: <LayoutDashboard size={20} />, label: t('sidebar.links.dashboard') },
+    { to: '/professional/calendar', icon: <CalendarDays size={20} />, label: t('sidebar.links.calendar') },
+    { to: '/professional/wallet', icon: <Wallet size={20} />, label: t('sidebar.links.wallet') },
+    { to: '/professional/services', icon: <Scissors size={20} />, label: t('sidebar.links.services') },
+    { to: '/professional/portfolio', icon: <ImageIcon size={20} />, label: t('sidebar.links.portfolio') },
+    { to: '/professional/reviews', icon: <Star size={20} />, label: t('sidebar.links.reviews') },
+    { to: '/professional/schedule', icon: <Clock size={20} />, label: t('sidebar.links.schedule') },
+    { to: '/professional/analytics', icon: <BarChart3 size={20} />, label: t('sidebar.links.analytics') },
+    { to: '/professional/profile', icon: <UserCircle size={20} />, label: t('sidebar.links.profile') },
+  ];
+
+  const adminLinks = [
+    { to: '/admin', icon: <LayoutDashboard size={20} />, label: t('sidebar.links.dashboard') },
+    { to: '/admin/users', icon: <Users size={20} />, label: t('sidebar.links.users') },
+    { to: '/admin/professionals', icon: <Briefcase size={20} />, label: t('sidebar.links.professionals') },
+    { to: '/admin/services', icon: <Scissors size={20} />, label: t('sidebar.links.services') },
+    { to: '/admin/transactions', icon: <FileText size={20} />, label: t('sidebar.links.transactions') },
+    { to: '/admin/analytics', icon: <BarChart3 size={20} />, label: t('sidebar.links.analytics') },
+    { to: '/admin/settings', icon: <Settings size={20} />, label: t('sidebar.links.settings') },
+  ];
+
   const links = role === 'admin' ? adminLinks : role === 'professional' ? proLinks : userLinks;
-  const roleLabel = role === 'admin' ? 'Admin' : role === 'professional' ? 'Professional' : 'Customer';
+  const roleLabel = role === 'admin' ? t('sidebar.roleAdmin') : role === 'professional' ? t('sidebar.rolePro') : t('sidebar.roleUser');
 
   const handleLogout = () => {
     logout();
@@ -99,8 +100,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
   // Determine the switch button text
   const switchButtonText = role === 'user'
-    ? (verificationStatus === 'approved' ? 'Switch to Professional Mode' : 'Become a Professional')
-    : 'Switch to Client Mode';
+    ? (verificationStatus === 'approved' ? t('sidebar.actions.switchToPro') : t('sidebar.actions.becomePro'))
+    : t('sidebar.actions.switchToClient');
 
   return (
     <>
@@ -171,12 +172,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
               </div>
             </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-            <ThemeToggle size="sm" />
-          </div>
           <button className="sidebar-link sidebar-logout" onClick={handleLogout}>
             <LogOut size={20} />
-            <span>Log out</span>
+            <span>{t('sidebar.actions.logout')}</span>
           </button>
         </div>
       </aside>

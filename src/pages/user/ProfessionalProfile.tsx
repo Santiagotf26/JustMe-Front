@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { MapPin, Clock, Star, CheckCircle, ChevronRight, Calendar, DollarSign, Loader } from 'lucide-react';
 import { Button, Avatar, Rating, Card, Badge } from '../../components/ui';
 import { professionalsService } from '../../services/professionalsService';
-import { availabilityService } from '../../services/availabilityService';
+
+import { useTranslation } from 'react-i18next';
 import './ProfessionalProfile.css';
 
 export default function ProfessionalProfile() {
@@ -15,6 +16,7 @@ export default function ProfessionalProfile() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,7 +34,7 @@ export default function ProfessionalProfile() {
         setReviews(Array.isArray(revData) ? revData : []);
       } catch (err: any) {
         console.error('Failed to load professional profile', err);
-        setError('No se pudo cargar el perfil del profesional');
+        setError(t('proProfile.errorLoad'));
       } finally {
         setLoading(false);
       }
@@ -51,8 +53,8 @@ export default function ProfessionalProfile() {
   if (error || !pro) {
     return (
       <div className="pro-profile-page" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-        <p style={{ color: 'var(--neutral-400)' }}>{error || 'Professional not found'}</p>
-        <Button variant="ghost" onClick={() => navigate(-1)}>Go Back</Button>
+        <p style={{ color: 'var(--neutral-400)' }}>{error || t('proProfile.errorLoad')}</p>
+        <Button variant="ghost" onClick={() => navigate(-1)}>{t('proProfile.goBack')}</Button>
       </div>
     );
   }
@@ -79,13 +81,13 @@ export default function ProfessionalProfile() {
           <div className="pro-hero-info">
             <div className="pro-hero-name">
               <h1>{proName}</h1>
-              {proVerified && <Badge variant="success" size="md"><CheckCircle size={12} /> Verified</Badge>}
+              {proVerified && <Badge variant="success" size="md"><CheckCircle size={12} /> {t('proProfile.verified')}</Badge>}
             </div>
             <Rating value={proRating} size="md" showValue count={proReviewCount} />
             <div className="pro-hero-meta">
-              <span><MapPin size={14} /> {proDistance.toFixed(1)} km away</span>
-              <span><Clock size={14} /> {proResponseTime} response</span>
-              <span><Star size={14} /> {proCompletedServices} services</span>
+              <span><MapPin size={14} /> {proDistance.toFixed(1)} {t('proProfile.away')}</span>
+              <span><Clock size={14} /> {proResponseTime} {t('proProfile.response')}</span>
+              <span><Star size={14} /> {proCompletedServices} {t('proProfile.servicesCount')}</span>
             </div>
           </div>
         </div>
@@ -95,16 +97,16 @@ export default function ProfessionalProfile() {
         {/* Bio */}
         {proBio && (
           <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <h2>About</h2>
+            <h2>{t('proProfile.about')}</h2>
             <p className="pro-bio">{proBio}</p>
           </motion.section>
         )}
 
         {/* Services */}
         <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <h2>Services & Prices</h2>
+          <h2>{t('proProfile.servicesPrices')}</h2>
           {services.length === 0 ? (
-            <p style={{ color: 'var(--neutral-400)', fontSize: 'var(--text-sm)' }}>No services listed yet</p>
+            <p style={{ color: 'var(--neutral-400)', fontSize: 'var(--text-sm)' }}>{t('proProfile.noServices')}</p>
           ) : (
             <div className="services-list">
               {services.map((svc: any, i: number) => (
@@ -126,12 +128,12 @@ export default function ProfessionalProfile() {
 
         {/* Availability */}
         <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-          <h2>Availability</h2>
+          <h2>{t('proProfile.availability')}</h2>
           <Card variant="glass" padding="md">
             <div className="availability-info">
               <Calendar size={20} />
               <div>
-                <p className="avail-status">{pro.availability || 'Check available slots'}</p>
+                <p className="avail-status">{pro.availability || t('proProfile.checkAvail')}</p>
                 {proLocation.address && (
                   <p className="avail-location"><MapPin size={13} /> {proLocation.address}</p>
                 )}
@@ -142,9 +144,9 @@ export default function ProfessionalProfile() {
 
         {/* Reviews */}
         <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-          <h2>Reviews ({proReviewCount})</h2>
+          <h2>{t('proProfile.reviews')} ({proReviewCount})</h2>
           {reviews.length === 0 ? (
-            <p style={{ color: 'var(--neutral-400)', fontSize: 'var(--text-sm)' }}>No reviews yet</p>
+            <p style={{ color: 'var(--neutral-400)', fontSize: 'var(--text-sm)' }}>{t('proProfile.noReviews')}</p>
           ) : (
             <div className="reviews-list">
               {reviews.slice(0, 5).map((review: any) => (
@@ -168,11 +170,11 @@ export default function ProfessionalProfile() {
       {/* Sticky Book CTA */}
       <div className="pro-book-cta glass">
         <div className="cta-price-info">
-          <span className="cta-from">From</span>
+          <span className="cta-from">{t('proProfile.from')}</span>
           <span className="cta-price">${basePrice}</span>
         </div>
         <Button size="lg" onClick={() => navigate(`/user/booking/${pro.id}`)} iconRight={<DollarSign size={18} />}>
-          Book Now
+          {t('proProfile.bookNow')}
         </Button>
       </div>
     </div>

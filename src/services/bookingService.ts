@@ -2,11 +2,18 @@ import { apiClient } from './api';
 
 export interface CreateBookingDto {
   professionalId: number;
-  serviceId?: number;
-  serviceName?: string;
+  professionalServiceId: number;
   date: string;
-  time: string;
-  price?: number;
+  startTime: string;
+  location?: string;
+  locationType?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface RescheduleBookingDto {
+  date: string;
+  startTime: string;
 }
 
 export const bookingService = {
@@ -30,8 +37,14 @@ export const bookingService = {
   },
 
   // Backend: PATCH /bookings/:id/status  body: { status }
-  updateBookingStatus: async (id: string, status: string) => {
+  updateBookingStatus: async (id: string | number, status: string) => {
     const response = await apiClient.patch(`/bookings/${id}/status`, { status });
     return response.data;
-  }
+  },
+
+  // Backend: PATCH /bookings/:id/reschedule  body: { date, startTime }
+  rescheduleBooking: async (id: string | number, data: RescheduleBookingDto) => {
+    const response = await apiClient.patch(`/bookings/${id}/reschedule`, data);
+    return response.data;
+  },
 };

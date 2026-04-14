@@ -5,22 +5,40 @@ import { MapPin, Search, ChevronRight, Scissors, Sparkles, Star, Hand, Heart, Dr
 import { Card, Button, Avatar, Rating } from '../../components/ui';
 import { professionalsService } from '../../services/professionalsService';
 import { useGeolocation } from '../../hooks';
+import { useTranslation } from 'react-i18next';
+import { apiClient } from '../../services/api';
 import './UserHome.css';
 
-const categories = [
-  { id: '1', name: 'Barber', icon: <Scissors size={24} />, color: '#8b45ff', bg: '#8b45ff12' },
-  { id: '2', name: 'Hair Stylist', icon: <Sparkles size={24} />, color: '#ff3366', bg: '#ff336612' },
-  { id: '3', name: 'Makeup', icon: <Star size={24} />, color: '#f59e0b', bg: '#f59e0b12' },
-  { id: '4', name: 'Nails', icon: <Hand size={24} />, color: '#ec4899', bg: '#ec489912' },
-  { id: '5', name: 'Skincare', icon: <Droplets size={24} />, color: '#10b981', bg: '#10b98112' },
-  { id: '6', name: 'Massage', icon: <Heart size={24} />, color: '#6366f1', bg: '#6366f112' },
-  { id: '7', name: 'Spa', icon: <Waves size={24} />, color: '#06b6d4', bg: '#06b6d412' },
-  { id: '8', name: 'Grooming', icon: <User size={24} />, color: '#8b5cf6', bg: '#8b5cf612' },
-];
+// Mapeos para iconos y colores basados en categorías conocidas
+const iconMapping: Record<string, any> = {
+  'Barber': <Scissors size={24} />,
+  'Hair Stylist': <Sparkles size={24} />,
+  'Makeup': <Star size={24} />,
+  'Nails': <Hand size={24} />,
+  'Skincare': <Droplets size={24} />,
+  'Massage': <Heart size={24} />,
+  'Spa': <Waves size={24} />,
+  'Grooming': <User size={24} />,
+};
+
+const colorMapping: Record<string, string> = {
+  'Barber': '#8b45ff',
+  'Hair Stylist': '#ff3366',
+  'Makeup': '#f59e0b',
+  'Nails': '#ec4899',
+  'Skincare': '#10b981',
+  'Massage': '#6366f1',
+  'Spa': '#06b6d4',
+  'Grooming': '#8b5cf6',
+};
 
 export default function UserHome() {
   const navigate = useNavigate();
   const geo = useGeolocation();
+  const { t } = useTranslation();
+
+  const [dbCategories, setDbCategories] = useState<any[]>([]);
+
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [topPros, setTopPros] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +60,7 @@ export default function UserHome() {
         setTopPros(list.slice(0, 4));
       } catch (err: any) {
         console.warn('Failed to fetch top professionals', err);
-        setError('No se pudieron cargar los profesionales');
+        setError(t('userHome.errorMsg'));
         setTopPros([]);
       } finally {
         setLoading(false);
@@ -54,25 +72,59 @@ export default function UserHome() {
     }
   }, [geo.loading, geo.latitude, geo.longitude]);
 
+  useEffect(() => {
+    apiClient.get('/services/categories')
+      .then(res => {
+        const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+        if (list.length > 0) {
+          setDbCategories(list.filter((s: any) => s.isActive !== false).map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            icon: iconMapping[s.category] || iconMapping[s.name] || <Sparkles size={24} />,
+            color: colorMapping[s.category] || colorMapping[s.name] || '#6366f1',
+            bg: `${colorMapping[s.category] || colorMapping[s.name] || '#6366f1'}12`
+          })));
+        } else {
+          // Fallback if no categories in DB
+          setDbCategories(Object.keys(iconMapping).map(key => ({
+            id: key,
+            name: key,
+            icon: iconMapping[key],
+            color: colorMapping[key],
+            bg: `${colorMapping[key]}12`
+          })));
+        }
+      })
+      .catch(() => {
+        setDbCategories(Object.keys(iconMapping).map(key => ({
+          id: key,
+          name: key,
+          icon: iconMapping[key],
+          color: colorMapping[key],
+          bg: `${colorMapping[key]}12`
+        })));
+      });
+  }, []);
+
   return (
     <div className="user-home">
       {/* Location Banner */}
       <motion.div className="location-banner glass" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <MapPin size={18} className="location-pin" />
         <div className="location-text">
-          <span className="location-label">Your location</span>
-          <span className="location-address">{geo.error ? 'Bogotá, Colombia (default)' : 'Your current location'}</span>
+          <span className="location-label">{t('userHome.locationLabel')}</span>
+          <span className="location-address">{geo.error ? 'Bogotá, Colombia' : t('userHome.locationDefault')}</span>
         </div>
-        <button className="location-change">Change</button>
+        <button className="location-change">{t('userHome.change')}</button>
       </motion.div>
 
       {/* Hero Card */}
       <motion.div className="home-hero-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <div className="home-hero-content">
-          <h1>What service<br />do you need?</h1>
-          <p>Find top-rated beauty professionals near you</p>
+          <h1>{t('userHome.heroTitle1')}<br />{t('userHome.heroTitle2')}</h1>
+          <p>{t('userHome.heroDesc')}</p>
           <Button onClick={() => navigate('/user/search')} icon={<Search size={18} />}>
-            Search Professionals
+            {t('userHome.searchBtn')}
           </Button>
         </div>
         <div className="home-hero-decoration">
@@ -85,11 +137,11 @@ export default function UserHome() {
       {/* Service Categories */}
       <section className="home-section">
         <div className="home-section-header">
-          <h2>Services</h2>
-          <button className="see-all" onClick={() => navigate('/user/search')}>See all <ChevronRight size={16} /></button>
+          <h2>{t('userHome.servicesTitle')}</h2>
+          <button className="see-all" onClick={() => navigate('/user/search')}>{t('userHome.seeAll')} <ChevronRight size={16} /></button>
         </div>
         <div className="categories-grid">
-          {categories.map((cat, i) => (
+          {dbCategories.map((cat, i) => (
             <motion.div
               key={cat.id}
               className={`category-chip ${selectedCategory === cat.id ? 'category-active' : ''}`}
@@ -114,8 +166,8 @@ export default function UserHome() {
       {/* Top Professionals */}
       <section className="home-section">
         <div className="home-section-header">
-          <h2>Top Professionals</h2>
-          <button className="see-all" onClick={() => navigate('/user/search')}>See all <ChevronRight size={16} /></button>
+          <h2>{t('userHome.topProsTitle')}</h2>
+          <button className="see-all" onClick={() => navigate('/user/search')}>{t('userHome.seeAll')} <ChevronRight size={16} /></button>
         </div>
 
         {loading ? (
@@ -125,13 +177,13 @@ export default function UserHome() {
         ) : error ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--neutral-400)' }}>
             <p>{error}</p>
-            <Button size="sm" variant="ghost" onClick={() => window.location.reload()}>Retry</Button>
+            <Button size="sm" variant="ghost" onClick={() => window.location.reload()}>{t('userHome.retry')}</Button>
           </div>
         ) : topPros.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--neutral-400)' }}>
             <User size={40} style={{ marginBottom: '8px', opacity: 0.4 }} />
-            <p>No professionals found nearby</p>
-            <Button size="sm" variant="ghost" onClick={() => navigate('/user/search')}>Search wider area</Button>
+            <p>{t('userHome.noProsTitle')}</p>
+            <Button size="sm" variant="ghost" onClick={() => navigate('/user/search')}>{t('userHome.searchWider')}</Button>
           </div>
         ) : (
           <div className="pros-scroll">
@@ -154,8 +206,8 @@ export default function UserHome() {
                     ))}
                   </div>
                   <div className="pro-card-meta">
-                    <span className="pro-distance"><MapPin size={13} /> {(pro.distance || 0).toFixed(1)} km</span>
-                    <span className="pro-price">from ${pro.price || pro.services?.[0]?.price || 0}</span>
+                    <span className="pro-distance"><MapPin size={13} /> {(pro.distance || 0).toFixed(1)} {t('userHome.distanceUnit')}</span>
+                    <span className="pro-price">{t('userHome.fromPrice')} ${pro.price || pro.services?.[0]?.price || 0}</span>
                   </div>
                 </Card>
               </motion.div>

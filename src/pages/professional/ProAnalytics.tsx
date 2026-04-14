@@ -1,24 +1,26 @@
 import { motion } from 'framer-motion';
 import { TrendingUp, Users, Star, Award, ChevronRight, Activity, CalendarDays } from 'lucide-react';
 import { Card, Badge, Button } from '../../components/ui';
+import { useTranslation } from 'react-i18next';
 import './ProAnalytics.css';
 
 export default function ProAnalytics() {
+  const { t } = useTranslation();
   const barHeights = [40, 65, 45, 80, 55, 90, 70];
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   const metrics = [
-    { label: 'Total Bookings', value: '142', trend: '+12%', icon: <CalendarDays size={18} />, color: 'var(--primary-500)' },
-    { label: 'Completion Rate', value: '98%', trend: '+2%', icon: <Activity size={18} />, color: 'var(--success-500)' },
-    { label: 'Total Clients', value: '89', trend: '+5%', icon: <Users size={18} />, color: 'var(--accent-500)' },
-    { label: 'Avg Rating', value: '4.9', trend: '+0.1', icon: <Star size={18} />, color: '#fbbf24' },
+    { label: t('proAnalytics.metrics.bookings'), value: '142', trend: '+12%', icon: <CalendarDays size={18} />, color: 'var(--primary-500)' },
+    { label: t('proAnalytics.metrics.completion'), value: '98%', trend: '+2%', icon: <Activity size={18} />, color: 'var(--success-500)' },
+    { label: t('proAnalytics.metrics.clients'), value: '89', trend: '+5%', icon: <Users size={18} />, color: 'var(--accent-500)' },
+    { label: t('proAnalytics.metrics.rating'), value: '4.9', trend: '+0.1', icon: <Star size={18} />, color: '#fbbf24' },
   ];
 
   return (
     <div className="pro-analytics">
       <div className="pa-header">
-        <h1>Performance & Analytics</h1>
-        <p>Track your business growth and unlock rewards</p>
+        <h1>{t('proAnalytics.title')}</h1>
+        <p>{t('proAnalytics.subtitle')}</p>
       </div>
 
       {/* Incentive Program Card */}
@@ -26,17 +28,17 @@ export default function ProAnalytics() {
         <Card variant="gradient" padding="lg" className="pa-incentive-card">
           <div className="pa-inc-top">
             <div>
-              <Badge variant="primary" size="sm">Monthly Milestone</Badge>
-              <h2>Super Pro Status</h2>
-              <p>Complete 200 services this month to unlock a <strong>$50 Wallet Bonus</strong> and <strong>0% Commission</strong> for a week.</p>
+              <Badge variant="primary" size="sm">{t('proAnalytics.milestone')}</Badge>
+              <h2>{t('proAnalytics.superPro')}</h2>
+              <p dangerouslySetInnerHTML={{ __html: t('proAnalytics.unlockMsg') }} />
             </div>
             <Award size={48} className="pa-inc-icon" />
           </div>
           
           <div className="pa-inc-progress">
             <div className="pa-prog-text">
-              <span>142 / 200 Services Completed</span>
-              <span>58 to go!</span>
+              <span>{t('proAnalytics.completed', { count: 142 })}</span>
+              <span>{t('proAnalytics.toGo', { count: 58 })}</span>
             </div>
             <div className="pa-prog-track">
               <motion.div 
@@ -70,8 +72,8 @@ export default function ProAnalytics() {
         {/* Weekly Chart */}
         <Card variant="default" padding="lg" className="pa-chart-card">
           <div className="pa-card-header">
-            <h3>Bookings This Week</h3>
-            <Button size="sm" variant="ghost">View Details <ChevronRight size={14} /></Button>
+            <h3>{t('proAnalytics.thisWeek')}</h3>
+            <Button size="sm" variant="ghost">{t('proAnalytics.viewDetails')} <ChevronRight size={14} /></Button>
           </div>
           <div className="pa-chart-area">
             <div className="pa-bars">
@@ -92,7 +94,7 @@ export default function ProAnalytics() {
 
         {/* Top Services */}
         <Card variant="default" padding="lg">
-          <h3>Top Performing Services</h3>
+          <h3>{t('proAnalytics.topServices')}</h3>
           <div className="pa-services-list">
             {[
               { name: 'Haircut & Styling', bookings: 65, rev: '$2,275' },
@@ -103,7 +105,7 @@ export default function ProAnalytics() {
                 <div className="pa-svc-rank">{i + 1}</div>
                 <div className="pa-svc-info">
                   <span className="pa-svc-name">{s.name}</span>
-                  <span className="pa-svc-bookings">{s.bookings} bookings</span>
+                  <span className="pa-svc-bookings">{t('proAnalytics.svcBookings', { count: s.bookings })}</span>
                 </div>
                 <div className="pa-svc-rev">{s.rev}</div>
               </div>

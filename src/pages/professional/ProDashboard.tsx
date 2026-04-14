@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, DollarSign, Star, TrendingUp, Clock, Users, AlertCircle, Loader } from 'lucide-react';
-import { Card, Avatar, Badge, Rating, Button } from '../../components/ui';
+import { Calendar, DollarSign, Star, TrendingUp, Clock, Users, AlertCircle, Loader, MapPin, Scissors } from 'lucide-react';
+import { Card, Avatar, Badge, Rating, Button, Tabs } from '../../components/ui';
 import { VerificationBanner } from '../../components/ui/VerificationBanner';
 import { bookingService } from '../../services/bookingService';
 import { professionalsService } from '../../services/professionalsService';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import './ProDashboard.css';
 
 export default function ProDashboard() {
+  const { t, i18n } = useTranslation();
   const { switchRole, verificationStatus, professionalId } = useAuth();
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<any[]>([]);
@@ -17,6 +19,7 @@ export default function ProDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [walletBalance, setWalletBalance] = useState(0);
+  const [apptTab, setApptTab] = useState('upcoming');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,8 +52,9 @@ export default function ProDashboard() {
   }, [professionalId]);
 
   const upcoming = bookings
-    .filter((b: any) => b.status === 'confirmed' || b.status === 'pending')
-    .slice(0, 3);
+    .filter((b: any) => b.status === 'confirmed' || b.status === 'pending');
+  const pastBookings = bookings
+    .filter((b: any) => b.status === 'completed' || b.status === 'cancelled');
 
   const todayBookings = bookings.filter((b: any) => {
     const bDate = new Date(b.scheduledAt || b.date);
@@ -58,12 +62,18 @@ export default function ProDashboard() {
     return bDate.toDateString() === today.toDateString();
   });
 
+  const apptList = apptTab === 'upcoming' ? upcoming : pastBookings;
+
   const dashStats = [
-    { label: "Today's Bookings", value: String(todayBookings.length), icon: <Calendar size={20} />, color: 'var(--primary-500)', bg: 'var(--primary-50)' },
-    { label: 'Weekly Earnings', value: stats?.weeklyEarnings ? `$${stats.weeklyEarnings}` : '$0', icon: <DollarSign size={20} />, color: 'var(--success-500)', bg: 'var(--success-50)' },
-    { label: 'Rating', value: String(stats?.rating || '0'), icon: <Star size={20} />, color: '#fbbf24', bg: '#fbbf2415' },
-    { label: 'Total Clients', value: String(stats?.totalClients || bookings.length), icon: <Users size={20} />, color: 'var(--accent-500)', bg: 'var(--accent-100)' },
+    { label: t('proDash.stats.todayBookings'), value: String(todayBookings.length), icon: <Calendar size={20} />, color: 'var(--primary-500)', bg: 'var(--primary-50)' },
+    { label: t('proDash.stats.weeklyEarnings'), value: stats?.weeklyEarnings ? `$${stats.weeklyEarnings}` : '$0', icon: <DollarSign size={20} />, color: 'var(--success-500)', bg: 'var(--success-50)' },
+    { label: t('proDash.stats.rating'), value: String(stats?.rating || '0'), icon: <Star size={20} />, color: '#fbbf24', bg: '#fbbf2415' },
+    { label: t('proDash.stats.totalClients'), value: String(stats?.totalClients || bookings.length), icon: <Users size={20} />, color: 'var(--accent-500)', bg: 'var(--accent-100)' },
   ];
+
+  const statusColors: Record<string, 'primary' | 'success' | 'warning' | 'error'> = {
+    pending: 'warning', confirmed: 'primary', completed: 'success', cancelled: 'error',
+  };
 
   if (loading) {
     return (
@@ -79,11 +89,11 @@ export default function ProDashboard() {
 
       <div className="pro-dash-header">
         <div>
-          <h1>Dashboard</h1>
-          <p className="dash-date">{new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+          <h1>{t('proDash.title')}</h1>
+          <p className="dash-date">{new Date().toLocaleDateString(i18n.language, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
         </div>
         <Button size="sm" variant="secondary" onClick={() => { switchRole('user'); navigate('/user'); }}>
-          Switch to Client Mode
+          {t('proDash.switchBtn')}
         </Button>
       </div>
 
@@ -91,8 +101,8 @@ export default function ProDashboard() {
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="dash-alert">
           <AlertCircle size={20} />
           <div>
-            <strong>Low Balance Warning</strong>
-            <p>Your wallet balance is ${walletBalance.toFixed(2)}. Please recharge to stay visible in search results.</p>
+            <strong>{t('proDash.lowBalance')}</strong>
+            <p>{t('proDash.balanceMsg', { balance: walletBalance.toFixed(2) })}</p>
           </div>
         </motion.div>
       )}
@@ -116,7 +126,7 @@ export default function ProDashboard() {
       <Card variant="gradient" padding="lg" className="earnings-overview-card">
         <div className="earnings-top">
           <div>
-            <p className="earnings-label">Monthly Earnings</p>
+            <p className="earnings-label">{t('proDash.earningsOverview')}</p>
             <h2 className="earnings-amount">${stats?.monthlyEarnings || 0}</h2>
           </div>
           <div className="earnings-trend"><TrendingUp size={16} /> {stats?.growthPercent || 0}%</div>
@@ -131,49 +141,79 @@ export default function ProDashboard() {
         </div>
       </Card>
 
-      <div className="dash-grid">
-        {/* Upcoming */}
-        <section>
-          <h2>Upcoming Appointments</h2>
-          <div className="dash-list">
-            {upcoming.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--neutral-400)' }}>
-                <Calendar size={32} style={{ opacity: 0.4, marginBottom: '8px' }} />
-                <p>No upcoming appointments</p>
-              </div>
-            ) : (
-              upcoming.map((b: any) => {
-                const clientName = b.client?.name || b.user?.name || b.professionalName || 'Client';
-                const svcName = b.service?.name || b.serviceName || b.service || 'Service';
-                const bDate = new Date(b.scheduledAt || b.date || new Date());
-                return (
-                  <Card key={b.id} variant="default" padding="sm" className="dash-appt-card">
-                    <div className="dash-appt-top">
-                      <div className="dash-appt-info">
-                        <p className="dash-appt-name">{clientName}</p>
-                        <p className="dash-appt-svc">{svcName}</p>
+      {/* ───── ALL APPOINTMENTS SECTION ───── */}
+      <section className="pro-all-appts">
+        <div className="pro-all-appts-header">
+          <h2>{t('proDash.allAppointments')}</h2>
+          <span className="pro-appt-count">{bookings.length} {t('proDash.totalLabel')}</span>
+        </div>
+        <Tabs
+          tabs={[
+            { id: 'upcoming', label: `${t('proDash.upcomingAppts')} (${upcoming.length})` },
+            { id: 'past', label: `${t('proDash.pastAppts')} (${pastBookings.length})` },
+          ]}
+          onChange={setApptTab}
+        />
+        <div className="pro-appts-list">
+          {apptList.length === 0 ? (
+            <div className="pro-appts-empty">
+              <Calendar size={36} style={{ opacity: 0.3 }} />
+              <p>{apptTab === 'upcoming' ? t('proDash.noAppts') : t('proDash.noPastAppts')}</p>
+            </div>
+          ) : (
+            apptList.map((b: any, i: number) => {
+              const clientName = b.user?.name
+                ? `${b.user.name} ${b.user.lastName || ''}`.trim()
+                : (b.client?.name || t('proDash.client'));
+              const clientAvatar = b.user?.avatar || b.client?.avatar;
+              const svcName = b.professionalService?.service?.name || b.service?.name || b.serviceName || b.service || t('proDash.service');
+              const bDate = new Date(b.scheduledAt || b.date || new Date());
+              const timeStr = b.startTime || b.time || bDate.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' });
+
+              return (
+                <motion.div
+                  key={b.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <Card variant="default" padding="md" className="pro-appt-row">
+                    <div className="pro-appt-client">
+                      <Avatar src={clientAvatar} name={clientName} size="sm" />
+                      <div className="pro-appt-client-info">
+                        <span className="pro-appt-client-name">{clientName}</span>
+                        <span className="pro-appt-svc"><Scissors size={12} /> {svcName}</span>
                       </div>
-                      <Badge variant={b.status === 'confirmed' ? 'success' : 'warning'}>{b.status}</Badge>
                     </div>
-                    <div className="dash-appt-meta">
-                      <span><Clock size={13} /> {b.time || bDate.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}</span>
-                      <span><Calendar size={13} /> {bDate.toLocaleDateString('en', { month: 'short', day: 'numeric' })}</span>
+                    <div className="pro-appt-datetime">
+                      <span className="pro-appt-date"><Calendar size={13} /> {bDate.toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' })}</span>
+                      <span className="pro-appt-time"><Clock size={13} /> {timeStr}</span>
+                    </div>
+                    <div className="pro-appt-loc">
+                      <MapPin size={13} />
+                      <span>{b.locationType === 'home' ? t('proDash.homeService') : t('proDash.atStudio')}</span>
+                    </div>
+                    <div className="pro-appt-status-price">
+                      <Badge variant={statusColors[b.status] || 'primary'} size="sm">{t(`appointments.status.${b.status}`, b.status)}</Badge>
+                      {b.price && <span className="pro-appt-price">${parseFloat(b.price).toFixed(0)}</span>}
                     </div>
                   </Card>
-                );
-              })
-            )}
-          </div>
-        </section>
+                </motion.div>
+              );
+            })
+          )}
+        </div>
+      </section>
 
+      <div className="dash-grid">
         {/* Recent Reviews */}
         <section>
-          <h2>Recent Reviews</h2>
+          <h2>{t('proDash.recentReviews')}</h2>
           <div className="dash-list">
             {reviews.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--neutral-400)' }}>
                 <Star size={32} style={{ opacity: 0.4, marginBottom: '8px' }} />
-                <p>No reviews yet</p>
+                <p>{t('proDash.noReviews')}</p>
               </div>
             ) : (
               reviews.slice(0, 3).map((r: any) => (
