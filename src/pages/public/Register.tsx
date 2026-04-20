@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, Phone, ArrowRight, ArrowLeft, Check, Sparkles, Heart, Scissors, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, Phone, ArrowRight, ArrowLeft, Check, Sparkles, Heart, Scissors, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { Button, Input } from '../../components/ui';
 import { LanguageToggle } from '../../components/ui';
 import { Scene3D } from '../../components/three/Scene3D';
@@ -26,7 +26,9 @@ export default function Register() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<'user' | 'professional'>('user');
-  const [form, setForm] = useState({ name: '', lastName: '', phone: '', email: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({ name: '', lastName: '', docType: 'CC', docNumber: '', phone: '', email: '', password: '', confirmPassword: '' });
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -39,8 +41,10 @@ export default function Register() {
     const val = value ?? form[key as keyof typeof form];
     let err: string | null = null;
     switch (key) {
-      case 'name': err = validateRequired(val, 'First name'); break;
-      case 'lastName': err = validateRequired(val, 'Last name'); break;
+      case 'name': err = validateRequired(val, 'Nombre'); break;
+      case 'lastName': err = validateRequired(val, 'Apellidos'); break;
+      case 'docType': err = validateRequired(val, 'Tipo de documento'); break;
+      case 'docNumber': err = validateRequired(val, 'Número de documento'); break;
       case 'phone': err = validatePhone(val); break;
       case 'email': err = validateEmail(val); break;
       case 'password': err = validatePassword(val); break;
@@ -60,12 +64,14 @@ export default function Register() {
   const validateStep = (): boolean => {
     if (step === 0) return true;
     if (step === 1) {
-      const fields = ['name', 'lastName', 'phone'];
+      const fields = ['name', 'lastName', 'docType', 'docNumber', 'phone'];
       fields.forEach(f => { setTouched(prev => ({ ...prev, [f]: true })); validateField(f); });
       return fields.every(f => {
         const val = form[f as keyof typeof form];
-        if (f === 'name') return !validateRequired(val, 'First name');
-        if (f === 'lastName') return !validateRequired(val, 'Last name');
+        if (f === 'name') return !validateRequired(val, 'Nombre');
+        if (f === 'lastName') return !validateRequired(val, 'Apellidos');
+        if (f === 'docType') return !validateRequired(val, 'Tipo de documento');
+        if (f === 'docNumber') return !validateRequired(val, 'Número de documento');
         if (f === 'phone') return !validatePhone(val);
         return true;
       });
@@ -94,6 +100,8 @@ export default function Register() {
       await register({
         name: form.name,
         lastName: form.lastName,
+        docType: form.docType,
+        docNumber: form.docNumber,
         email: form.email,
         password: form.password,
         phone: form.phone,
@@ -101,10 +109,19 @@ export default function Register() {
       });
 
       const userRole = localStorage.getItem('justme_role') || role;
-      notify('success', 'Account created!', 'Welcome to JustMe. Let\'s get started.');
+      notify('success', '¡Cuenta creada!', 'Bienvenido a JustMe.');
       navigate(userRole === 'admin' ? '/admin' : userRole === 'professional' ? '/professional' : '/user');
     } catch (err: any) {
-      notify('error', 'Registration failed', err.response?.data?.message || 'Failed to create account.');
+      const status = err.response?.status;
+      const msg = err.response?.data?.message;
+      if (status === 409) {
+        // Email duplicado: llevar al paso 2 y marcar el campo en rojo
+        setStep(2);
+        setTouched(prev => ({ ...prev, email: true }));
+        setErrors(prev => ({ ...prev, email: 'Este correo ya está registrado' }));
+      } else {
+        notify('error', 'Error al registrarse', typeof msg === 'string' ? msg : 'No se pudo crear la cuenta.');
+      }
     } finally {
       setLoading(false);
     }
@@ -192,6 +209,31 @@ export default function Register() {
                       )}
                     </AnimatePresence>
                   </div>
+                  {/* Tipo de documento */}
+                  <div className="form-field">
+                    <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--neutral-700)', display: 'block', marginBottom: 6 }}>Tipo de documento</label>
+                    <select
+                      value={form.docType}
+                      onChange={e => update('docType', e.target.value)}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--neutral-200)', background: 'var(--surface-primary)', color: 'var(--neutral-900)', fontSize: 14 }}
+                    >
+                      <option value="CC">Cédula de Ciudadanía (CC)</option>
+                      <option value="CE">Cédula de Extranjería (CE)</option>
+                      <option value="TI">Tarjeta de Identidad (TI)</option>
+                      <option value="PP">Pasaporte (PP)</option>
+                      <option value="NIT">NIT</option>
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <Input label="Número de documento" icon={<User size={18} />} value={form.docNumber} onChange={e => update('docNumber', e.target.value)} onBlur={() => handleBlur('docNumber')} className={touched.docNumber && errors.docNumber ? 'input-error' : ''} />
+                    <AnimatePresence>
+                      {touched.docNumber && errors.docNumber && (
+                        <motion.span className="field-error" initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}>
+                          <AlertCircle size={12} /> {errors.docNumber}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </div>
                   <div className="form-field">
                     <Input label={t('register.phone')} icon={<Phone size={18} />} type="tel" value={form.phone} onChange={e => update('phone', e.target.value)} onBlur={() => handleBlur('phone')} className={touched.phone && errors.phone ? 'input-error' : ''} />
                     <AnimatePresence>
@@ -218,7 +260,20 @@ export default function Register() {
                     </AnimatePresence>
                   </div>
                   <div className="form-field">
-                    <Input label={t('register.password')} icon={<Lock size={18} />} type="password" value={form.password} onChange={e => update('password', e.target.value)} onBlur={() => handleBlur('password')} className={touched.password && errors.password ? 'input-error' : ''} />
+                    <Input
+                      label={t('register.password')}
+                      icon={<Lock size={18} />}
+                      type={showPwd ? 'text' : 'password'}
+                      iconRight={
+                        <button type="button" onClick={() => setShowPwd(!showPwd)} style={{ display: 'flex', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0 }}>
+                          {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      }
+                      value={form.password}
+                      onChange={e => update('password', e.target.value)}
+                      onBlur={() => handleBlur('password')}
+                      className={touched.password && errors.password ? 'input-error' : ''}
+                    />
                     {form.password && (
                       <div className="pwd-strength">
                         <div className="pwd-strength-bar">
@@ -236,7 +291,20 @@ export default function Register() {
                     </AnimatePresence>
                   </div>
                   <div className="form-field">
-                    <Input label={t('register.confirmPassword')} icon={<Lock size={18} />} type="password" value={form.confirmPassword} onChange={e => update('confirmPassword', e.target.value)} onBlur={() => handleBlur('confirmPassword')} className={touched.confirmPassword && errors.confirmPassword ? 'input-error' : ''} />
+                    <Input
+                      label={t('register.confirmPassword')}
+                      icon={<Lock size={18} />}
+                      type={showConfirmPwd ? 'text' : 'password'}
+                      iconRight={
+                        <button type="button" onClick={() => setShowConfirmPwd(!showConfirmPwd)} style={{ display: 'flex', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0 }}>
+                          {showConfirmPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      }
+                      value={form.confirmPassword}
+                      onChange={e => update('confirmPassword', e.target.value)}
+                      onBlur={() => handleBlur('confirmPassword')}
+                      className={touched.confirmPassword && errors.confirmPassword ? 'input-error' : ''}
+                    />
                     <AnimatePresence>
                       {touched.confirmPassword && errors.confirmPassword && (
                         <motion.span className="field-error" initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}>

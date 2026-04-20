@@ -10,6 +10,8 @@ import { Preloader } from './components/ui';
 import Landing from './pages/public/Landing';
 import Login from './pages/public/Login';
 import Register from './pages/public/Register';
+import ForgotPassword from './pages/public/ForgotPassword';
+import ResetPassword from './pages/public/ResetPassword';
 
 // User pages
 import UserHome from './pages/user/UserHome';
@@ -50,6 +52,8 @@ function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* User Routes */}
             <Route element={<ProtectedRoute allowedRoles={['user', 'professional', 'admin']} />}>

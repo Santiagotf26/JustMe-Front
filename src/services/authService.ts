@@ -8,6 +8,8 @@ export interface LoginCredentials {
 export interface RegisterData {
   name: string;
   lastName?: string;
+  docType?: string;
+  docNumber?: string;
   email: string;
   password: string;
   role: 'user' | 'professional';
@@ -49,6 +51,8 @@ export const authService = {
       const payload = {
         name: data.name,
         lastName: data.lastName,
+        docType: data.docType,
+        docNumber: data.docNumber,
         email: data.email,
         password: data.password,
         role: data.role,

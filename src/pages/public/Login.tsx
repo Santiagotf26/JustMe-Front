@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, AlertCircle } from 'lucide-react';
 import { Button, Input } from '../../components/ui';
@@ -14,8 +14,9 @@ import './Login.css';
 export default function Login() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { login } = useAuth();
+  const { login, loginWithToken } = useAuth();
   const { notify } = useNotification();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
@@ -23,6 +24,35 @@ export default function Login() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [touched, setTouched] = useState<{ email?: boolean; password?: boolean }>({});
+  const googleLoginAttempted = useRef(false);
+
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const roleParam = searchParams.get('role');
+    
+    if (token && !googleLoginAttempted.current) {
+      googleLoginAttempted.current = true;
+      const handleTokenCallback = async () => {
+        setLoading(true);
+        try {
+          await loginWithToken(token, roleParam);
+          
+          const userRole = localStorage.getItem('justme_role') || 'user';
+          notify('success', 'Bienvenido de nuevo!', 'Sesión iniciada correctamente.');
+
+          if (userRole === 'admin') navigate('/admin');
+          else if (userRole === 'professional') navigate('/professional');
+          else navigate('/user');
+        } catch (err: any) {
+          setApiError('Error al iniciar sesión con Google.');
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      handleTokenCallback();
+    }
+  }, [searchParams, loginWithToken, navigate, notify]);
 
   const validate = () => {
     const emailErr = validateEmail(email);
@@ -67,6 +97,10 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleLogin = () => {
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/google`;
   };
 
   return (
@@ -164,7 +198,7 @@ export default function Login() {
 
             <div className="login-options">
               <label className="login-remember"><input type="checkbox" /> {t('login.remember')}</label>
-              <a href="#" className="login-forgot">{t('login.forgot')}</a>
+              <Link to="/forgot-password" className="login-forgot">{t('login.forgot')}</Link>
             </div>
             <Button type="submit" fullWidth loading={loading} size="lg" iconRight={<ArrowRight size={18} />}>
               {t('login.btn')}
@@ -174,7 +208,7 @@ export default function Login() {
           <div className="login-divider"><span>{t('login.or')}</span></div>
 
           <div className="social-buttons">
-            <button className="social-btn">
+            <button type="button" className="social-btn" onClick={handleGoogleLogin}>
               <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A10.99 10.99 0 0 0 12 23z" fill="#34A853" /><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.99 10.99 0 0 0 1 12c0 1.78.43 3.46 1.18 4.93l3.66-2.84z" fill="#FBBC05" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" /></svg>
               Google
             </button>

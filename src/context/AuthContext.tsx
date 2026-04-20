@@ -24,6 +24,7 @@ interface AuthContextType {
   verificationStatus: VerificationStatus['status'];
   professionalId: string | null; // The ID from the professionals table
   login: (credentials: LoginCredentials) => Promise<void>;
+  loginWithToken: (token: string, roleParam?: string | null) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   switchRole: (role: 'user' | 'professional' | 'admin') => void;
@@ -134,6 +135,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithToken = async (token: string, roleParam?: string | null) => {
+    setIsLoggingIn(true);
+    try {
+      localStorage.setItem('justme_token', token);
+      
+      const profile = await authService.getProfile();
+      const userRole = roleParam || profile.roles?.[0]?.name || 'user';
+      
+      localStorage.setItem('justme_role', userRole);
+      setUser({ ...profile, role: userRole } as unknown as UserProfile);
+      setRole(userRole as any);
+
+      if (userRole === 'professional') {
+        await refreshVerificationStatus();
+        await resolveProfessionalId(profile.id);
+      }
+    } catch (error) {
+      console.error('Login with token error in context:', error);
+      throw error;
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
   const register = async (data: RegisterData) => {
     setIsLoggingIn(true);
     try {
@@ -181,7 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user, isAuthenticated: !!user, role, isLoggingIn,
       verificationStatus: vStatus,
       professionalId,
-      login, register, logout, switchRole,
+      login, loginWithToken, register, logout, switchRole,
       refreshVerificationStatus, setUser,
     }}>
       {children}
