@@ -56,6 +56,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     { to: '/admin/transactions', icon: <FileText size={20} />, label: t('sidebar.links.transactions') },
     { to: '/admin/analytics', icon: <BarChart3 size={20} />, label: t('sidebar.links.analytics') },
     { to: '/admin/settings', icon: <Settings size={20} />, label: t('sidebar.links.settings') },
+    { to: '/admin/profile', icon: <UserCircle size={20} />, label: t('sidebar.links.profile') },
   ];
 
   const links = role === 'admin' ? adminLinks : role === 'professional' ? proLinks : userLinks;

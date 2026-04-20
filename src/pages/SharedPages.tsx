@@ -982,17 +982,55 @@ export function AdminTransactions() {
   const [loading, setLoading] = React.useState(true);
   const { t } = useTranslation();
 
+  // Pagination state
+  const [page, setPage] = React.useState(1);
+  const [totalPages, setTotalPages] = React.useState(1);
+  const limit = 8;
+  const [stats, setStats] = React.useState({ totalRevenue: 0, commissions: 0, totalTx: 0 });
+
   React.useEffect(() => {
-    apiClient.get('/admin/transactions').then((res: any) => {
-      const data = res?.data || res;
-      setTransactions(Array.isArray(data) ? data : (data?.data || []));
-    }).catch(() => setTransactions([])).finally(() => setLoading(false));
-  }, []);
+    setLoading(true);
+    // Fetch paginated transactions and stats in parallel
+    Promise.all([
+      apiClient.get(`/admin/transactions?page=${page}&limit=${limit}`),
+      apiClient.get('/admin/stats')
+    ])
+      .then(([txRes, statsRes]) => {
+        const txData = txRes.data;
+        setTransactions(txData.data || []);
+        setTotalPages(txData.meta?.totalPages || 1);
+        
+        const st = statsRes.data;
+        setStats({
+          totalRevenue: st.totalRevenue || 0,
+          commissions: st.totalCommissions || 0,
+          totalTx: txData.meta?.totalItems || 0
+        });
+      })
+      .catch(() => {
+        setTransactions([]);
+        setTotalPages(1);
+      })
+      .finally(() => setLoading(false));
+  }, [page]);
 
-  const totalRevenue = transactions.filter(t => t.type === 'payment').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
-  const commissions = transactions.filter(t => t.type === 'commission').reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
+  const generatePageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (page <= 3) {
+        pages.push(1, 2, 3, 4, '...', totalPages);
+      } else if (page >= totalPages - 2) {
+        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, '...', page - 1, page, page + 1, '...', totalPages);
+      }
+    }
+    return pages;
+  };
 
-  if (loading) return <div style={loadingCenter}><Loader size={28} style={{ animation: 'spin 0.8s linear infinite', color: 'var(--primary-500)' }} /></div>;
+  if (loading && transactions.length === 0) return <div style={loadingCenter}><Loader size={28} style={{ animation: 'spin 0.8s linear infinite', color: 'var(--primary-500)' }} /></div>;
 
   return (
     <div style={pageStyle}>
@@ -1000,22 +1038,23 @@ export function AdminTransactions() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
         <Card variant="default" padding="md">
           <p style={subStyle}>{t('sharedPages.admin.totalRev')}</p>
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 800 }}>${totalRevenue.toFixed(2)}</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 800 }}>${stats.totalRevenue.toFixed(2)}</p>
         </Card>
         <Card variant="default" padding="md">
           <p style={subStyle}>{t('sharedPages.admin.commissions')}</p>
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 800, color: 'var(--success-500)' }}>+${commissions.toFixed(2)}</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 800, color: 'var(--success-500)' }}>+${stats.commissions.toFixed(2)}</p>
         </Card>
         <Card variant="default" padding="md">
           <p style={subStyle}>{t('sharedPages.admin.totalTx')}</p>
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 800 }}>{transactions.length}</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 800 }}>{stats.totalTx}</p>
         </Card>
       </div>
+      
       {transactions.length === 0 ? (
         <p style={{ color: 'var(--neutral-400)', textAlign: 'center', padding: '2rem' }}>{t('sharedPages.admin.noTx')}</p>
       ) : (
         <Card variant="default" padding="none">
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ overflowX: 'auto', opacity: loading ? 0.5 : 1, transition: 'opacity 0.2s' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--neutral-100)' }}>
@@ -1037,6 +1076,50 @@ export function AdminTransactions() {
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination UI */}
+          {totalPages > 1 && (
+            <div style={{ padding: 'var(--space-3) var(--space-4)', borderTop: '1px solid var(--neutral-100)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                {t('sharedPages.admin.prev', 'Anterior')}
+              </Button>
+              
+              <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                {generatePageNumbers().map((p, i) => (
+                  <button
+                    key={i}
+                    onClick={() => typeof p === 'number' && setPage(p)}
+                    disabled={typeof p !== 'number'}
+                    style={{
+                      width: 32, height: 32,
+                      borderRadius: 'var(--radius-md)',
+                      border: 'none',
+                      background: p === page ? 'var(--primary-500)' : 'transparent',
+                      color: p === page ? 'white' : typeof p === 'number' ? 'var(--neutral-700)' : 'var(--neutral-400)',
+                      fontWeight: p === page ? 600 : 400,
+                      cursor: typeof p === 'number' ? 'pointer' : 'default',
+                    }}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+              
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+              >
+                {t('sharedPages.admin.next', 'Siguiente')}
+              </Button>
+            </div>
+          )}
         </Card>
       )}
     </div>
@@ -1101,23 +1184,57 @@ export function AdminAnalytics() {
 
 export function AdminSettings() {
   const { t } = useTranslation();
+  const { notify } = useNotification();
+  const [saving, setSaving] = React.useState(false);
+  const [settings, setSettings] = React.useState(() => {
+    try {
+      const saved = localStorage.getItem('justme_admin_settings');
+      return saved ? JSON.parse(saved) : {
+        platformName: 'JustMe',
+        commissionRate: '9',
+        supportEmail: 'support@justme.com',
+        maxRadius: '5'
+      };
+    } catch {
+      return { platformName: 'JustMe', commissionRate: '9', supportEmail: 'support@justme.com', maxRadius: '5' };
+    }
+  });
+
+  const handleSave = () => {
+    setSaving(true);
+    setTimeout(() => {
+      localStorage.setItem('justme_admin_settings', JSON.stringify(settings));
+      notify('success', 'Configuración guardada', 'Los ajustes de la plataforma se han actualizado correctamente.');
+      setSaving(false);
+    }, 600);
+  };
+
+  const fields = [
+    { key: 'platformName', label: t('sharedPages.admin.platName') },
+    { key: 'commissionRate', label: t('sharedPages.admin.commRate') },
+    { key: 'supportEmail', label: t('sharedPages.admin.suppEmail') },
+    { key: 'maxRadius', label: t('sharedPages.admin.maxRadius') },
+  ];
+
   return (
-    <div style={pageStyle}>
+    <div style={{ ...pageStyle, maxWidth: 640 }}>
       <h1 style={headerStyle}>{t('sharedPages.admin.setTitle')}</h1>
       <Card variant="default" padding="lg">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          {[
-            { label: t('sharedPages.admin.platName'), defaultVal: 'JustMe' },
-            { label: t('sharedPages.admin.commRate'), defaultVal: '9' },
-            { label: t('sharedPages.admin.suppEmail'), defaultVal: 'support@justme.com' },
-            { label: t('sharedPages.admin.maxRadius'), defaultVal: '5' },
-          ].map(f => (
-            <div key={f.label}>
+          {fields.map(f => (
+            <div key={f.key}>
               <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>{f.label}</label>
-              <input type="text" defaultValue={f.defaultVal} style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none' }} />
+              <input 
+                type="text" 
+                value={(settings as any)[f.key]} 
+                onChange={e => setSettings({ ...settings, [f.key]: e.target.value })}
+                style={{ width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none' }} 
+              />
             </div>
           ))}
-          <Button>{t('sharedPages.pro.saveChanges')}</Button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-2)' }}>
+            <Button onClick={handleSave} loading={saving}>{t('sharedPages.pro.saveChanges')}</Button>
+          </div>
         </div>
       </Card>
     </div>
@@ -1208,6 +1325,183 @@ export function UserPayments() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+export function AdminProfile() {
+  const { user, setUser } = useAuth();
+  const [editing, setEditing] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  const { notify } = useNotification();
+  const { t } = useTranslation();
+
+  const [formData, setFormData] = React.useState({
+    name: user?.name || '',
+    lastName: user?.lastName || '',
+    phone: user?.phone || '',
+  });
+
+  // Keep form in sync when user data loads
+  React.useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        lastName: user.lastName || '',
+        phone: user.phone || '',
+      });
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    try {
+      if (!user?.id) return;
+      setSaving(true);
+      const updatedUser = await userService.updateProfile(user.id.toString(), formData);
+      setUser({ ...user, ...updatedUser, role: user.role });
+      setEditing(false);
+      notify('success', 'Perfil actualizado', 'Los cambios se han guardado correctamente.');
+    } catch (err: any) {
+      notify('error', 'Error al guardar', err.response?.data?.message || 'No se pudieron guardar los cambios');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const labelStyle = { fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' };
+  const inputStyle = { width: '100%', padding: 'var(--space-3)', border: '1.5px solid var(--neutral-200)', borderRadius: 'var(--radius-xl)', outline: 'none', transition: 'all 0.2s' };
+
+  return (
+    <div style={{...pageStyle, maxWidth: 640}}>
+      <h1 style={headerStyle}>Mi Perfil Administrativo</h1>
+      
+      {/* Profile Header Card */}
+      <Card variant="default" padding="lg">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+          <div style={{ position: 'relative' }}>
+            <Avatar src={user?.avatar} name={user?.name || 'Admin'} size="xl" />
+            <button style={{
+              position: 'absolute', bottom: 0, right: 0,
+              background: 'var(--primary-500)', color: 'white',
+              border: 'none', borderRadius: '50%', width: 28, height: 28,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              <Edit size={12} />
+            </button>
+          </div>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 700, margin: '0 0 var(--space-1) 0' }}>
+              {user?.name} {user?.lastName}
+            </h2>
+            <p style={{ color: 'var(--neutral-500)', fontSize: 'var(--text-sm)', margin: '0 0 var(--space-2) 0' }}>
+              {user?.email}
+            </p>
+            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+              <Badge variant="primary" size="sm">Administrador</Badge>
+              <Badge variant="success" size="sm">
+                <CheckCircle size={10} style={{ marginRight: 4 }} /> Verificado
+              </Badge>
+            </div>
+          </div>
+          {!editing && (
+            <Button variant="secondary" onClick={() => setEditing(true)}>
+              <Edit size={16} style={{ marginRight: 6 }} /> Editar
+            </Button>
+          )}
+        </div>
+      </Card>
+
+      {/* Editor Form */}
+      {editing && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          style={{ marginTop: 'var(--space-4)' }}
+        >
+          <Card variant="default" padding="lg">
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-4)', marginTop: 0 }}>
+              Información Personal
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+              <div>
+                <label style={labelStyle}>Nombre</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  style={inputStyle}
+                  placeholder="Tu nombre"
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Apellidos</label>
+                <input
+                  type="text"
+                  value={formData.lastName}
+                  onChange={e => setFormData({ ...formData, lastName: e.target.value })}
+                  style={inputStyle}
+                  placeholder="Tus apellidos"
+                />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+              <div>
+                <label style={labelStyle}>Email (Solo lectura)</label>
+                <input
+                  type="email"
+                  value={user?.email || ''}
+                  style={{ ...inputStyle, background: 'var(--neutral-50)', color: 'var(--neutral-400)' }}
+                  disabled
+                  title="El email no se puede modificar desde aquí"
+                />
+                <p style={{ fontSize: '10px', color: 'var(--neutral-400)', marginTop: 3 }}>El email no puede modificarse aquí por seguridad.</p>
+              </div>
+              <div>
+                <label style={labelStyle}>Teléfono</label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                  style={inputStyle}
+                  placeholder="Tu teléfono"
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+              <Button variant="ghost" onClick={() => setEditing(false)}>{t('sharedPages.pro.cancel')}</Button>
+              <Button onClick={handleSave} loading={saving}>{t('sharedPages.pro.saveChanges')}</Button>
+            </div>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Admin Stats */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.4 }}
+        style={{ marginTop: 'var(--space-4)' }}
+      >
+        <Card variant="default" padding="lg">
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, margin: '0 0 var(--space-4) 0' }}>
+            Información de la cuenta
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            {[
+              { label: 'Rol', value: 'Administrador' },
+              { label: 'Email', value: user?.email || '—' },
+              { label: 'Teléfono', value: user?.phone || '—' },
+              { label: 'Última conexión', value: 'Ahora mismo' },
+            ].map((st, i) => (
+              <div key={i} style={{ display: 'flex', borderBottom: '1px solid var(--neutral-100)', paddingBottom: 'var(--space-2)' }}>
+                <span style={{ width: 140, fontWeight: 500, color: 'var(--neutral-500)', fontSize: 'var(--text-sm)' }}>{st.label}</span>
+                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--neutral-700)', fontWeight: 500 }}>{st.value}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </motion.div>
     </div>
   );
 }
