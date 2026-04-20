@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Briefcase, CreditCard, TrendingUp, DollarSign, Activity, 
   BarChart3, ShieldCheck, Loader, UserPlus, Calendar, Search, 
-  ChevronLeft, ChevronRight, SlidersHorizontal
+  ChevronLeft, ChevronRight, SlidersHorizontal, ArrowUpRight, ArrowDownLeft, Percent
 } from 'lucide-react';
 import { Card, Badge, Avatar, Button, Modal } from '../../components/ui';
 import { useAdminStats } from '../../hooks/useAdminStats';
@@ -147,27 +147,27 @@ export default function AdminDashboard() {
           </div>
           <div className="admin-table">
             {activities.length === 0 ? (
-              <p className="empty-msg">{t('adminDash.noActivity')}</p>
+              <div className="empty-msg">
+                <Activity size={32} opacity={0.3} />
+                {t('adminDash.noActivity')}
+              </div>
             ) : activities.slice(0, 5).map((activity: any) => (
-              <motion.div key={activity.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
-                <Card variant="default" padding="sm" className="admin-row">
-                  <div className="activity-icon-wrapper" style={{ 
-                    background: activity.type === 'registration' ? 'var(--primary-50)' : 'var(--success-50)',
-                    color: activity.type === 'registration' ? 'var(--primary-500)' : 'var(--success-500)'
-                  }}>
-                    {activity.type === 'registration' ? <UserPlus size={18} /> : <Calendar size={18} />}
-                  </div>
-                  <div className="admin-row-info">
-                    <p className="admin-row-name">
-                      {activity.title}
-                      <span className="row-time">
-                        {new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </p>
-                    <p className="admin-row-detail">{activity.description}</p>
-                  </div>
-                  <Avatar src={activity.userAvatar} name={activity.userName} size="xs" />
-                </Card>
+              <motion.div key={activity.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="admin-row">
+                <div className={`activity-icon-wrapper ${activity.type ?? 'booking'}`}>
+                  {activity.type === 'registration' ? <UserPlus size={18} /> : 
+                   activity.type === 'revenue' ? <DollarSign size={18} /> :
+                   <Calendar size={18} />}
+                </div>
+                <div className="admin-row-info">
+                  <p className="admin-row-name">
+                    {activity.userName ?? activity.title}
+                    <span className="row-time">
+                      {new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </p>
+                  <p className="admin-row-detail">{activity.description}</p>
+                </div>
+                <Avatar src={activity.userAvatar} name={activity.userName || activity.title} size="xs" />
               </motion.div>
             ))}
           </div>
@@ -185,19 +185,27 @@ export default function AdminDashboard() {
           </div>
           <div className="admin-table">
             {transactions.length === 0 ? (
-              <p className="empty-msg">{t('adminDash.noTx')}</p>
+              <div className="empty-msg">
+                <CreditCard size={32} opacity={0.3} />
+                {t('adminDash.noTx')}
+              </div>
             ) : transactions.map((t: any) => (
-              <motion.div key={t.id} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}>
-                <Card variant="default" padding="sm" className="admin-row">
-                  <div className="admin-row-info">
-                    <p className="admin-row-name">{t.description ?? t('adminDash.transaction')}</p>
-                    <p className="admin-row-detail">{new Date(t.createdAt ?? t.date).toLocaleDateString()} • {t.type}</p>
-                  </div>
-                  <span className={`admin-amount ${t.type === 'commission' ? 'positive' : ''}`}>
-                    {t.type === 'commission' ? '+' : ''}${parseFloat(t.amount).toLocaleString()}
+              <motion.div key={t.id} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="admin-row">
+                <div className={`admin-transaction-icon ${t.type}`}>
+                  {t.type === 'payment' ? <ArrowDownLeft size={18} /> : 
+                   t.type === 'payout' ? <ArrowUpRight size={18} /> :
+                   <Percent size={18} />}
+                </div>
+                <div className="admin-row-info">
+                  <p className="admin-row-name">{t.description ?? t('adminDash.transaction')}</p>
+                  <p className="admin-row-detail">{new Date(t.createdAt ?? t.date).toLocaleDateString()} • <span style={{ textTransform: 'capitalize' }}>{t.type}</span></p>
+                </div>
+                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                  <span className={`admin-amount ${t.type === 'commission' || t.type === 'payment' ? 'positive' : 'negative'}`}>
+                    {t.type === 'commission' || t.type === 'payment' ? '+' : '-'}${Math.abs(parseFloat(t.amount)).toLocaleString()}
                   </span>
                   <Badge variant={t.status === 'completed' ? 'success' : 'warning'} size="sm">{t.status}</Badge>
-                </Card>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -229,20 +237,22 @@ export default function AdminDashboard() {
 
           <div className="modal-list">
             {activities.length === 0 ? (
-              <p className="empty-msg">{t('adminDash.noResults')}</p>
+              <div className="empty-msg">
+                <Activity size={32} opacity={0.3} />
+                {t('adminDash.noResults')}
+              </div>
             ) : activities.map((activity: any) => (
               <div key={activity.id} className="modal-row">
-                <div className="activity-icon-wrapper small" style={{ 
-                  background: activity.type === 'registration' ? 'var(--primary-50)' : 'var(--success-50)',
-                  color: activity.type === 'registration' ? 'var(--primary-500)' : 'var(--success-500)'
-                }}>
-                  {activity.type === 'registration' ? <UserPlus size={14} /> : <Calendar size={14} />}
+                <div className={`activity-icon-wrapper small ${activity.type ?? 'booking'}`}>
+                  {activity.type === 'registration' ? <UserPlus size={14} /> : 
+                   activity.type === 'revenue' ? <DollarSign size={14} /> :
+                   <Calendar size={14} />}
                 </div>
                 <div className="modal-row-info">
                   <p className="modal-row-title">{activity.description}</p>
                   <p className="modal-row-time">{new Date(activity.timestamp).toLocaleString()}</p>
                 </div>
-                <Avatar src={activity.userAvatar} name={activity.userName} size="xs" />
+                <Avatar src={activity.userAvatar} name={activity.userName || activity.title} size="xs" />
               </div>
             ))}
           </div>
