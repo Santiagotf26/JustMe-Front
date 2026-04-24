@@ -72,4 +72,13 @@ export const userService = {
       return false;
     }
   },
+
+  uploadAvatar: async (userId: string | number, file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await apiClient.post(`/users/${userId}/avatar`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
 };

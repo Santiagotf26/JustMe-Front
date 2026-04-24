@@ -191,6 +191,49 @@
   width: 100%;
 }
 
+.ps-empty-text {
+  color: var(--neutral-400);
+  font-size: var(--text-sm);
+  text-align: center;
+  padding: var(--space-4);
+  font-style: italic;
+}
+
+.ps-exceptions-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ps-exception-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--neutral-100);
+}
+
+.ps-exception-row:last-child {
+  border-bottom: none;
+}
+
+.ps-ex-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ps-ex-date {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--neutral-800);
+  text-transform: capitalize;
+}
+
+.ps-ex-reason {
+  font-size: var(--text-xs);
+  color: var(--neutral-500);
+}
+
 @media (max-width: 768px) {
   .ps-content {
     flex-direction: column;

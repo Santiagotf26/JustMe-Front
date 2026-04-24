@@ -87,18 +87,16 @@ export default function SearchPage() {
   const [panelExpanded, setPanelExpanded] = useState(true);
 
   // Booking
-  const [bookingSlot, setBookingSlot] = useState('');
+  const [, setBookingSlot] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
-
-
 
   const [backendPros, setBackendPros] = useState<any[]>([]);
   const [loadingPros, setLoadingPros] = useState(false);
-  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [, setAvailableSlots] = useState<string[]>([]);
+  const [, setLoadingSlots] = useState(false);
   const [selectedProDetails, setSelectedProDetails] = useState<any>(null);
-  const [loadingProDetails, setLoadingProDetails] = useState(false);
-  const [selectedServicesList, setSelectedServicesList] = useState<any[]>([]);
+  const [, setLoadingProDetails] = useState(false);
+  const [, setSelectedServicesList] = useState<any[]>([]);
 
   // Fetch initial nearby professionals on load
   useEffect(() => {
@@ -192,7 +190,7 @@ export default function SearchPage() {
     // Fetch detailed real professional data
     setLoadingProDetails(true);
     try {
-      const details = await professionalsService.getProfessionalById(Number(id));
+      const details = await professionalsService.getProfessionalById(String(id));
       setSelectedProDetails({
         ...details,
         name: details.user?.name || t('search.professional'),
@@ -207,8 +205,7 @@ export default function SearchPage() {
   };
   const handleStartBooking = async (id: string) => {
     setSelectedProId(id);
-    const pro = favorites.find(p => String(p.id) === id) || nearby.find(p => String(p.id) === id);
-    if (pro) setSelectedPro(pro);
+    // Removed unused pro calculation
     
     setPhase('booking');
     setBookingSlot('');

@@ -20,7 +20,8 @@ export interface WorkingHour {
 }
 
 export interface ProfessionalServiceDto {
-  name: string;
+  serviceId?: number;
+  name?: string;
   description: string;
   price: number;
   duration: number; // minutes
@@ -98,39 +99,49 @@ export const professionalsService = {
   },
 
   uploadPortfolioImages: async (professionalId: string, files: File[]) => {
-    const formData = new FormData();
-    files.forEach(file => formData.append('images', file));
-
-    const response = await apiClient.post(`/professionals/${professionalId}/portfolio`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+    const promises = files.map(file => {
+      const formData = new FormData();
+      formData.append('image', file);
+      return apiClient.post(`/professionals/${professionalId}/portfolio`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
     });
+    const responses = await Promise.all(promises);
+    return responses.map(r => r.data);
+  },
+
+  deletePortfolioImage: async (_professionalId: string, imageId: string | number) => {
+    const response = await apiClient.delete(`/professionals/portfolio/${imageId}`);
     return response.data;
   },
 
   getDashboardStats: async (professionalId: string) => {
     // No dedicated stats endpoint exists yet — compute from bookings + reviews
     try {
-      const [bookingsRes, reviewsRes] = await Promise.all([
-        apiClient.get(`/bookings/professional/${professionalId}`).catch(() => ({ data: [] })),
-        apiClient.get(`/reviews/professional/${professionalId}`).catch(() => ({ data: [] })),
-      ]);
-      const bookings = bookingsRes.data || [];
-      const reviews = reviewsRes.data || [];
-      const totalEarnings = bookings
-        .filter((b: any) => b.status === 'completed')
-        .reduce((sum: number, b: any) => sum + (b.totalPrice || 0), 0);
-      const avgRating = reviews.length > 0
-        ? reviews.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / reviews.length
-        : 0;
+      const bookings = await apiClient.get(`/bookings/professional/${professionalId}`);
+      const reviews = await apiClient.get(`/reviews/professional/${professionalId}`);
+      
+      const bData = Array.isArray(bookings.data) ? bookings.data : [];
+      const rData = Array.isArray(reviews.data) ? reviews.data : [];
+
+      const totalBookings = bData.length;
+      const completedBookings = bData.filter((b: any) => b.status === 'completed').length;
+      const totalRevenue = bData
+        .filter((b: any) => b.status === 'completed' || b.status === 'confirmed')
+        .reduce((sum: number, b: any) => sum + (parseFloat(b.price) || 0), 0);
+      
+      const averageRating = rData.length > 0 
+        ? rData.reduce((sum: number, r: any) => sum + r.rating, 0) / rData.length 
+        : 5;
+
       return {
-        totalAppointments: bookings.length,
-        completedAppointments: bookings.filter((b: any) => b.status === 'completed').length,
-        totalEarnings,
-        averageRating: Math.round(avgRating * 10) / 10,
-        totalReviews: reviews.length,
+        totalBookings,
+        completedBookings,
+        totalRevenue,
+        averageRating
       };
     } catch {
-      return null;
+      return { totalBookings: 0, completedBookings: 0, totalRevenue: 0, averageRating: 5 };
     }
   },
 
@@ -147,4 +158,38 @@ export const professionalsService = {
     const response = await apiClient.delete(`/professionals/${id}`);
     return response.data;
   },
+
+  createProfile: async (data: any) => {
+    const response = await apiClient.post('/professionals', data);
+    return response.data;
+  },
+
+  getServiceCategories: async () => {
+    try {
+      const response = await apiClient.get('/services/categories');
+      return response.data;
+    } catch {
+      return [];
+    }
+  },
+
+  // Schedule Exceptions
+  getExceptions: async (professionalId: string) => {
+    try {
+      const response = await apiClient.get(`/schedule/${professionalId}/exceptions`);
+      return response.data;
+    } catch {
+      return [];
+    }
+  },
+
+  addException: async (professionalId: string, data: { date: string; startTime?: string; endTime?: string; isFullDay: boolean; reason?: string }) => {
+    const response = await apiClient.post(`/schedule/${professionalId}/exceptions`, data);
+    return response.data;
+  },
+
+  deleteException: async (id: string | number) => {
+    const response = await apiClient.delete(`/schedule/exceptions/${id}`);
+    return response.data;
+  }
 };

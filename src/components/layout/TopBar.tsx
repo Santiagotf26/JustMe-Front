@@ -1,8 +1,9 @@
-import { Bell, Search, Menu, Sparkles, Check, CheckCheck, User, LogOut, Settings } from 'lucide-react';
+import { Bell, Search, Menu, Sparkles, CheckCheck, User, LogOut, Settings, Wallet } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../ui/Avatar';
-import { ThemeToggle, LanguageToggle } from '../ui';
+import { ThemeToggle, LanguageToggle, Badge } from '../ui';
+import { motion } from 'framer-motion';
 import { apiClient } from '../../services/api';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -68,7 +69,7 @@ const typeColors: Record<string, string> = {
 
 export function TopBar({ onMenuClick }: TopBarProps) {
   const { user, logout, role } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { notifications, unread, markRead, markAllRead } = useNotifications();
 
@@ -131,13 +132,15 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       </div>
 
       <div className="topbar-right">
-        <LanguageToggle size="sm" />
-        <ThemeToggle size="sm" />
+        <div className="topbar-actions">
+          <LanguageToggle size="sm" />
+          <ThemeToggle size="sm" />
+        </div>
 
         {/* Notifications */}
-        <div ref={notifRef} style={{ position: 'relative' }}>
+        <div ref={notifRef} className="topbar-dropdown-container">
           <button
-            className="topbar-icon-btn"
+            className={`topbar-icon-btn ${showNotif ? 'active' : ''}`}
             id="notifications-btn"
             onClick={() => { setShowNotif(v => !v); setShowProfile(false); }}
           >
@@ -146,93 +149,106 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           </button>
 
           {showNotif && (
-            <div className="topbar-dropdown" style={{ width: 360 }}>
+            <motion.div 
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className="topbar-dropdown notifications-dropdown"
+            >
               <div className="topbar-dropdown-header">
-                <span>Notificaciones</span>
+                <h3>{t('sharedPages.pro.notifTitle', 'Notificaciones')}</h3>
                 {unread > 0 && (
                   <button className="topbar-dropdown-action" onClick={markAllRead}>
-                    <CheckCheck size={14} /> Marcar todo leído
+                    <CheckCheck size={14} /> {t('sharedPages.pro.markAllRead', 'Marcar todo leído')}
                   </button>
                 )}
               </div>
-              <div className="topbar-dropdown-list" style={{ maxHeight: 380, overflowY: 'auto' }}>
+              <div className="topbar-dropdown-list">
                 {notifications.length === 0 ? (
                   <div className="topbar-dropdown-empty">
-                    <Bell size={28} style={{ opacity: 0.2 }} />
-                    <p>Sin notificaciones</p>
+                    <div className="empty-icon-ring">
+                      <Bell size={28} />
+                    </div>
+                    <p>{t('sharedPages.pro.noNotif', 'Sin notificaciones')}</p>
                   </div>
                 ) : notifications.map(n => (
                   <div
                     key={n.id}
-                    className={`topbar-notif-item${n.isRead ? '' : ' unread'}`}
+                    className={`topbar-notif-item ${n.isRead ? '' : 'unread'}`}
                     onClick={() => !n.isRead && markRead(n.id)}
                   >
                     <div
-                      className="topbar-notif-dot"
-                      style={{ background: typeColors[n.type] || typeColors.system }}
-                    />
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                      className="topbar-notif-icon"
+                      style={{ background: `${typeColors[n.type] || typeColors.system}15`, color: typeColors[n.type] || typeColors.system }}
+                    >
+                      <Sparkles size={14} />
+                    </div>
+                    <div className="topbar-notif-content">
                       <p className="topbar-notif-title">{n.title}</p>
                       <p className="topbar-notif-msg">{n.message}</p>
                       <p className="topbar-notif-time">
-                        {new Date(n.createdAt).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' })}
+                        {new Date(n.createdAt).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
-                    {!n.isRead && (
-                      <button
-                        className="topbar-notif-read"
-                        title="Marcar como leída"
-                        onClick={e => { e.stopPropagation(); markRead(n.id); }}
-                      >
-                        <Check size={13} />
-                      </button>
-                    )}
+                    {!n.isRead && <div className="unread-dot" />}
                   </div>
                 ))}
               </div>
-            </div>
+              <div className="topbar-dropdown-footer">
+                <button onClick={() => setShowNotif(false)}>{t('userHome.seeAll')}</button>
+              </div>
+            </motion.div>
           )}
         </div>
 
         {/* Profile Dropdown */}
         {user && (
-          <div ref={profileRef} style={{ position: 'relative' }}>
+          <div ref={profileRef} className="topbar-dropdown-container">
             <button
-              className="topbar-avatar-btn"
+              className={`topbar-avatar-btn ${showProfile ? 'active' : ''}`}
               onClick={() => { setShowProfile(v => !v); setShowNotif(false); }}
             >
               <Avatar src={user.avatar} name={user.name} size="sm" status="online" />
             </button>
 
             {showProfile && (
-              <div className="topbar-dropdown" style={{ width: 270, right: 0 }}>
-                {/* Profile header */}
+              <motion.div 
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                className="topbar-dropdown profile-dropdown"
+              >
                 <div className="topbar-profile-header">
                   <Avatar src={user.avatar} name={user.name} size="md" status="online" />
-                  <div style={{ minWidth: 0 }}>
-                    <p className="topbar-profile-name">{fullName || user.name}</p>
-                    <p className="topbar-profile-email">{user.email}</p>
-                    <span className="topbar-profile-role">{user.roles?.[0]?.name || role || 'admin'}</span>
+                  <div className="profile-info">
+                    <p className="profile-name">{fullName || user.name}</p>
+                    <p className="profile-email">{user.email}</p>
+                    <Badge variant="primary" size="sm">
+                      {user.roles?.[0]?.name || role || 'admin'}
+                    </Badge>
                   </div>
                 </div>
                 <div className="topbar-dropdown-divider" />
-                <button
-                  className="topbar-dropdown-item"
-                  onClick={() => handleNavigate(getProfileRoute())}
-                >
-                  <User size={15} /> Mi Perfil
-                </button>
-                <button
-                  className="topbar-dropdown-item"
-                  onClick={() => handleNavigate(getSettingsRoute())}
-                >
-                  <Settings size={15} /> Configuración
-                </button>
+                <div className="topbar-dropdown-menu">
+                  <button className="topbar-dropdown-item" onClick={() => handleNavigate(getProfileRoute())}>
+                    <div className="item-icon"><User size={16} /></div>
+                    <span>{t('sidebar.links.profile')}</span>
+                  </button>
+                  <button className="topbar-dropdown-item" onClick={() => handleNavigate(getSettingsRoute())}>
+                    <div className="item-icon"><Settings size={16} /></div>
+                    <span>{t('sidebar.links.settings')}</span>
+                  </button>
+                  {role === 'professional' && (
+                    <button className="topbar-dropdown-item" onClick={() => handleNavigate('/professional/wallet')}>
+                      <div className="item-icon"><Wallet size={16} /></div>
+                      <span>{t('sidebar.links.wallet')}</span>
+                    </button>
+                  )}
+                </div>
                 <div className="topbar-dropdown-divider" />
                 <button className="topbar-dropdown-item danger" onClick={handleLogout}>
-                  <LogOut size={15} /> Cerrar sesión
+                  <div className="item-icon"><LogOut size={16} /></div>
+                  <span>{t('sidebar.actions.logout')}</span>
                 </button>
-              </div>
+              </motion.div>
             )}
           </div>
         )}

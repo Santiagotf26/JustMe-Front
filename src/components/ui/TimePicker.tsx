@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { Clock, AlertCircle } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { AlertCircle } from 'lucide-react';
 import './TimePicker.css';
 
 interface TimePickerProps {
@@ -10,7 +9,7 @@ interface TimePickerProps {
 }
 
 export const TimePicker: React.FC<TimePickerProps> = ({ selectedDate, selectedTime, onSelect }) => {
-  const { t } = useTranslation();
+  
 
   const isToday = useMemo(() => {
     if (!selectedDate) return false;

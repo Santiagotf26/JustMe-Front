@@ -40,7 +40,7 @@ export default function ProDashboard() {
 
         if (statsData) {
           setStats(statsData);
-          setWalletBalance(statsData.totalEarnings || 0);
+          setWalletBalance(statsData.totalRevenue || 0);
         }
       } catch (err) {
         console.warn('Failed to load dashboard data', err);
@@ -66,9 +66,9 @@ export default function ProDashboard() {
 
   const dashStats = [
     { label: t('proDash.stats.todayBookings'), value: String(todayBookings.length), icon: <Calendar size={20} />, color: 'var(--primary-500)', bg: 'var(--primary-50)' },
-    { label: t('proDash.stats.weeklyEarnings'), value: stats?.weeklyEarnings ? `$${stats.weeklyEarnings}` : '$0', icon: <DollarSign size={20} />, color: 'var(--success-500)', bg: 'var(--success-50)' },
-    { label: t('proDash.stats.rating'), value: String(stats?.rating || '0'), icon: <Star size={20} />, color: '#fbbf24', bg: '#fbbf2415' },
-    { label: t('proDash.stats.totalClients'), value: String(stats?.totalClients || bookings.length), icon: <Users size={20} />, color: 'var(--accent-500)', bg: 'var(--accent-100)' },
+    { label: t('proDash.stats.weeklyEarnings'), value: stats?.weeklyEarnings ? `$${stats.weeklyEarnings}` : stats?.totalRevenue ? `$${stats.totalRevenue}` : '$0', icon: <DollarSign size={20} />, color: 'var(--success-500)', bg: 'var(--success-50)' },
+    { label: t('proDash.stats.rating'), value: String(stats?.averageRating?.toFixed(1) || stats?.rating || '5.0'), icon: <Star size={20} />, color: '#fbbf24', bg: '#fbbf2415' },
+    { label: t('proDash.stats.totalClients'), value: String(stats?.totalClients || stats?.completedBookings || bookings.length), icon: <Users size={20} />, color: 'var(--accent-500)', bg: 'var(--accent-100)' },
   ];
 
   const statusColors: Record<string, 'primary' | 'success' | 'warning' | 'error'> = {
@@ -127,7 +127,7 @@ export default function ProDashboard() {
         <div className="earnings-top">
           <div>
             <p className="earnings-label">{t('proDash.earningsOverview')}</p>
-            <h2 className="earnings-amount">${stats?.monthlyEarnings || 0}</h2>
+            <h2 className="earnings-amount">${stats?.monthlyEarnings || stats?.totalRevenue || 0}</h2>
           </div>
           <div className="earnings-trend"><TrendingUp size={16} /> {stats?.growthPercent || 0}%</div>
         </div>
@@ -194,7 +194,7 @@ export default function ProDashboard() {
                       <span>{b.locationType === 'home' ? t('proDash.homeService') : t('proDash.atStudio')}</span>
                     </div>
                     <div className="pro-appt-status-price">
-                      <Badge variant={statusColors[b.status] || 'primary'} size="sm">{t(`appointments.status.${b.status}`, b.status)}</Badge>
+                      <Badge variant={statusColors[b.status] || 'primary'} size="sm">{String(t(`appointments.status.${b.status}`, b.status))}</Badge>
                       {b.price && <span className="pro-appt-price">${parseFloat(b.price).toFixed(0)}</span>}
                     </div>
                   </Card>
@@ -208,12 +208,15 @@ export default function ProDashboard() {
       <div className="dash-grid">
         {/* Recent Reviews */}
         <section>
-          <h2>{t('proDash.recentReviews')}</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
+            <h2>{t('proDash.recentReviews')}</h2>
+            <Button size="sm" variant="ghost" onClick={() => navigate('/professional/reviews')}>{t('userHome.seeAll')}</Button>
+          </div>
           <div className="dash-list">
             {reviews.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--neutral-400)' }}>
                 <Star size={32} style={{ opacity: 0.4, marginBottom: '8px' }} />
-                <p>{t('proDash.noReviews')}</p>
+                <p style={{ margin: 0, fontWeight: 600 }}>{t('sharedPages.pro.noRev')}</p>
               </div>
             ) : (
               reviews.slice(0, 3).map((r: any) => (
