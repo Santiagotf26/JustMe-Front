@@ -13,7 +13,9 @@ export interface UserProfile {
   photoUrl?: string;
   phone?: string;
   avatar?: string;
-  addresses?: { id: string; title: string; current?: boolean; address: string }[];
+  latitude?: number;
+  longitude?: number;
+  addresses?: { id: string; label?: string; title?: string; current?: boolean; address: string }[];
 }
 
 interface AuthContextType {

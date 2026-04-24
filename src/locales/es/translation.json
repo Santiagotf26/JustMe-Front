@@ -400,7 +400,13 @@
       "usersTitle": "Gestión de Usuarios",
       "searchUsers": "Buscar usuarios...",
       "noUsers": "No se encontraron usuarios",
-      "headersUser": ["Usuario", "Correo", "Rol", "Estado", "Acciones"],
+      "headersUser": [
+        "Usuario",
+        "Correo",
+        "Rol",
+        "Estado",
+        "Acciones"
+      ],
       "active": "Activo",
       "disabled": "Deshabilitado",
       "editBtn": "Editar",
@@ -413,7 +419,12 @@
       "disableWarn": "Al desmarcar esto, el usuario no podrá iniciar sesión.",
       "prosTitle": "Gestión de Profesionales",
       "noPros": "No se encontraron profesionales",
-      "headersPro": ["Profesional", "Calificación", "Estado", "Acciones"],
+      "headersPro": [
+        "Profesional",
+        "Calificación",
+        "Estado",
+        "Acciones"
+      ],
       "verified": "Verificado",
       "pending": "Pendiente",
       "viewBtn": "Ver",
@@ -426,7 +437,13 @@
       "commissions": "Comisiones",
       "totalTx": "Total Transacciones",
       "noTx": "No se encontraron transacciones",
-      "headersTx": ["Descripción", "Tipo", "Monto", "Fecha", "Estado"],
+      "headersTx": [
+        "Descripción",
+        "Tipo",
+        "Monto",
+        "Fecha",
+        "Estado"
+      ],
       "analytTitle": "Analítica de Plataforma",
       "avgRating": "Calificación Promed.",
       "growthRate": "Tasa de Crecimiento",
@@ -491,7 +508,20 @@
     "startDate": "Fecha inicio",
     "endDate": "Fecha fin",
     "noResults": "No se encontraron resultados",
-    "months": ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+    "months": [
+      "Ene",
+      "Feb",
+      "Mar",
+      "Abr",
+      "May",
+      "Jun",
+      "Jul",
+      "Ago",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dic"
+    ]
   },
   "proDash": {
     "title": "Panel de Control",
@@ -623,4 +653,3 @@
     "sendBtn": "Enviar Solicitud"
   }
 }
-

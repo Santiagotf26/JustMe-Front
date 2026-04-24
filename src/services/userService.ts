@@ -9,6 +9,7 @@ export interface UpdateUserProfileDto {
   longitude?: number;
   city?: string;
   department?: string;
+  addresses?: any[];
 }
 
 export const userService = {
