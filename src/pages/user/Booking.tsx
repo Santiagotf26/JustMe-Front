@@ -46,11 +46,7 @@ export default function Booking() {
         ]);
         setPro(proData);
         const svcList = Array.isArray(svcData) ? svcData : (svcData?.data || []);
-        setServices(svcList.length > 0 ? svcList : [
-          { name: 'Basic Service', duration: 30, price: proData.price || 25 },
-          { name: 'Standard Service', duration: 45, price: (proData.price || 25) + 10 },
-          { name: 'Premium Service', duration: 60, price: (proData.price || 25) + 25 },
-        ]);
+        setServices(svcList);
       } catch (err) {
         console.error('Failed to load professional for booking', err);
         notify('error', t('booking.errorTitle'), t('booking.errorLoadData'));
@@ -61,13 +57,14 @@ export default function Booking() {
     fetchPro();
   }, [id]);
 
-  // Fetch availability when date changes
+  // Fetch availability when date or service changes
   useEffect(() => {
     if (!id || !selectedDate) return;
     const fetchSlots = async () => {
       setSlotsLoading(true);
       try {
-        const data = await availabilityService.getAvailability(id, selectedDate);
+        const serviceId = services.find(s => s.name === selectedService)?.id;
+        const data = await availabilityService.getAvailability(id, selectedDate, serviceId);
         setAvailability(data);
       } catch {
         setAvailability([]);
@@ -76,7 +73,7 @@ export default function Booking() {
       }
     };
     fetchSlots();
-  }, [id, selectedDate]);
+  }, [id, selectedDate, selectedService, services]);
 
   const dates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() + i + 1);
@@ -205,17 +202,20 @@ export default function Booking() {
           <motion.div key="s0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="booking-step">
             <h2>{t('booking.chooseService')}</h2>
             <div className="service-options">
-              {services.map(svc => (
-                <Card key={svc.name || svc.id} variant={selectedService === svc.name ? 'glass' : 'outlined'} hover padding="md"
-                  className={`svc-option ${selectedService === svc.name ? 'svc-selected' : ''}`}
-                  onClick={() => setSelectedService(svc.name)}>
-                  <div className="svc-option-info">
-                    <h3>{svc.name}</h3>
-                    <span className="svc-dur"><Clock size={13} /> {svc.duration || 30} {t('booking.min')}</span>
-                  </div>
-                  <span className="svc-price">${svc.price || 0}</span>
-                </Card>
-              ))}
+              {services.map(svc => {
+                const svcName = svc.description?.includes(' - ') ? svc.description.split(' - ')[0] : (svc.service?.name || svc.name || 'Servicio Personalizado');
+                return (
+                  <Card key={svc.id || svcName} variant={selectedService === svcName ? 'glass' : 'outlined'} hover padding="md"
+                    className={`svc-option ${selectedService === svcName ? 'svc-selected' : ''}`}
+                    onClick={() => setSelectedService(svcName)}>
+                    <div className="svc-option-info">
+                      <h3>{svcName}</h3>
+                      <span className="svc-dur"><Clock size={13} /> {svc.duration || 30} {t('booking.min')}</span>
+                    </div>
+                    <span className="svc-price">${svc.price || 0}</span>
+                  </Card>
+                );
+              })}
             </div>
           </motion.div>
         )}

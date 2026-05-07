@@ -109,19 +109,22 @@ export default function ProfessionalProfile() {
             <p style={{ color: 'var(--neutral-400)', fontSize: 'var(--text-sm)' }}>{t('proProfile.noServices')}</p>
           ) : (
             <div className="services-list">
-              {services.map((svc: any, i: number) => (
-                <Card key={svc.id || i} variant="default" padding="sm" hover className="service-row"
-                  onClick={() => navigate(`/user/booking/${pro.id}`)}>
-                  <div className="service-info">
-                    <h4>{svc.name}</h4>
-                    <span className="service-dur"><Clock size={13} /> {svc.duration || 30} min</span>
-                  </div>
-                  <div className="service-price-action">
-                    <span className="service-price">${svc.price || 0}</span>
-                    <ChevronRight size={16} />
-                  </div>
-                </Card>
-              ))}
+              {services.map((svc: any, i: number) => {
+                const svcName = svc.name || svc.service?.name || t('proDash.service', 'Servicio');
+                return (
+                  <Card key={svc.id || i} variant="default" padding="sm" hover className="service-row"
+                    onClick={() => navigate(`/user/booking/${pro.id}`)}>
+                    <div className="service-info">
+                      <h4>{svcName}</h4>
+                      <span className="service-dur"><Clock size={13} /> {svc.duration || 30} min</span>
+                    </div>
+                    <div className="service-price-action">
+                      <span className="service-price">${svc.price || 0}</span>
+                      <ChevronRight size={16} />
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </motion.section>

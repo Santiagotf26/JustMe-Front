@@ -122,7 +122,7 @@ export default function SearchPage() {
         const lat = Number(p.latitude);
         const lng = Number(p.longitude);
         const services = p.professionalServices?.map((ps: any) => ps.service?.category) || [];
-        const serviceNames = p.professionalServices?.map((ps: any) => ps.service?.name) || [];
+        const serviceNames = p.professionalServices?.map((ps: any) => ps.name || ps.service?.name) || [];
         
         return {
           ...p,

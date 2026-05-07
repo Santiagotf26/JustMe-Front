@@ -1,4 +1,4 @@
-import { Bell, Search, Menu, Sparkles, CheckCheck, User, LogOut, Settings, Wallet } from 'lucide-react';
+import { Bell, Search, Menu, Sparkles, CheckCheck, User, LogOut, Settings, Wallet, Star } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../ui/Avatar';
@@ -180,7 +180,10 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                       className="topbar-notif-icon"
                       style={{ background: `${typeColors[n.type] || typeColors.system}15`, color: typeColors[n.type] || typeColors.system }}
                     >
-                      <Sparkles size={14} />
+                      {n.type === 'booking' ? <Bell size={14} /> : 
+                       n.type === 'wallet' ? <Wallet size={14} /> : 
+                       n.type === 'review' ? <Star size={14} /> : 
+                       <Sparkles size={14} />}
                     </div>
                     <div className="topbar-notif-content">
                       <p className="topbar-notif-title">{n.title}</p>

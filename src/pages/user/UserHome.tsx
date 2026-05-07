@@ -113,7 +113,7 @@ export default function UserHome() {
         <MapPin size={18} className="location-pin" />
         <div className="location-text">
           <span className="location-label">{t('userHome.locationLabel')}</span>
-          <span className="location-address">{geo.error ? 'Bogotá, Colombia' : t('userHome.locationDefault')}</span>
+          <span className="location-address">{geo.error ? 'Duitama, Boyacá' : t('userHome.locationDefault')}</span>
         </div>
         <button className="location-change">{t('userHome.change')}</button>
       </motion.div>

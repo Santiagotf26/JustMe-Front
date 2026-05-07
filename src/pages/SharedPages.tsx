@@ -451,13 +451,9 @@ export function ProServices() {
 
   const handleOpenEdit = (svc: any) => {
     setEditingService(svc);
-    const fullDesc = svc.description || '';
-    const descPart = fullDesc.includes(' - ') ? fullDesc.split(' - ')[1] : fullDesc;
-    const namePart = (fullDesc.includes(' - ') ? fullDesc.split(' - ')[0] : '') || svc.service?.name || svc.name || '';
-    
     setFormData({ 
-      name: namePart, 
-      description: descPart, 
+      name: svc.name || svc.service?.name || '', 
+      description: svc.description || '', 
       price: String(svc.price || ''), 
       duration: String(svc.duration || ''),
       categoryId: String(svc.serviceId || '')
@@ -474,7 +470,8 @@ export function ProServices() {
     try {
       const payload = {
         serviceId: parseInt(formData.categoryId) || categories[0]?.id || 1,
-        description: formData.name + ' - ' + formData.description,
+        name: formData.name,
+        description: formData.description,
         price: parseFloat(formData.price),
         duration: parseInt(formData.duration),
       };
@@ -536,11 +533,9 @@ export function ProServices() {
                   </div>
                   <div style={flexStyle}>
                     <p style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>
-                      {s.description?.includes(' - ') 
-                        ? s.description.split(' - ')[0] 
-                        : (s.service?.name || s.name || 'Servicio Personalizado')}
+                      {s.name || s.service?.name || 'Servicio'}
                     </p>
-                    {s.description && <p style={{ ...subStyle, marginTop: 2 }}>{s.description.includes(' - ') ? s.description.split(' - ')[1] : s.description}</p>}
+                    {s.description && <p style={{ ...subStyle, marginTop: 2 }}>{s.description}</p>}
                     <p style={subStyle}><Clock size={12} style={{ display: 'inline' }} /> {s.duration || 30} {t('sharedPages.pro.min')}</p>
                   </div>
                   <span style={{ fontWeight: 800, fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', color: 'var(--primary-600)' }}>$ {new Intl.NumberFormat('es-CO').format(s.price || 0)} COP</span>
@@ -746,7 +741,7 @@ export function ProProfileEditor() {
   const [formData, setFormData] = React.useState({
     name: user?.name || '', email: user?.email || '', phone: user?.phone || '',
     bio: '', address: '', serviceRadius: 5, experience: '', specialties: '',
-    latitude: 0, longitude: 0, avatar: user?.avatar || ''
+    latitude: 5.8268, longitude: -73.0331, avatar: user?.avatar || ''
   });
 
   const getImageUrl = (url: string) => {
@@ -772,8 +767,8 @@ export function ProProfileEditor() {
             serviceRadius: Number(data.serviceRadius) || prev.serviceRadius,
             experience: data.experience || prev.experience,
             specialties: data.specialties || prev.specialties,
-            latitude: Number(data.latitude) || 0,
-            longitude: Number(data.longitude) || 0,
+            latitude: Number(data.latitude) || 5.8268,
+            longitude: Number(data.longitude) || -73.0331,
           }));
         }
       }).catch(console.warn);
