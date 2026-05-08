@@ -157,6 +157,15 @@ export default function SearchPage() {
   const nearby = filtered.filter(p => !p.isFavorite);
   const selectedPro = backendPros.find(p => p.id === selectedProId);
 
+  const selectedSvcData = useMemo(() => {
+    if (!selectedPro || !selectedService) return null;
+    return selectedPro.professionalServices?.find((ps: any) => 
+      ps.service?.name === selectedService || ps.name === selectedService || ps.service?.category === selectedService
+    );
+  }, [selectedPro, selectedService]);
+
+  const bookingPrice = selectedSvcData?.price || selectedPro?.price || 0;
+
   const canSearch = selectedService && selectedDate && selectedTime;
 
   const handleSearch = async () => {
@@ -248,7 +257,7 @@ export default function SearchPage() {
       // Try payment redirect
       try {
         const payment = await paymentsService.createPayment({
-          amount: selectedPro.price,
+          amount: bookingPrice,
           metadata: { bookingId: booking.id }
         });
         if (payment?.init_point) {
@@ -666,7 +675,7 @@ export default function SearchPage() {
 
                    <div className="checkout-total">
                      <span>Total Estimado</span>
-                     <strong>${selectedPro.price}</strong>
+                     <strong>${new Intl.NumberFormat('es-CO').format(bookingPrice)}</strong>
                    </div>
                    
                    <p className="checkout-disclaimer">
@@ -723,7 +732,7 @@ export default function SearchPage() {
               </div>
               <div className="uber-confirm-price">
                 <span>{t('search.total')}</span>
-                <strong>${selectedPro.price}</strong>
+                <strong>${new Intl.NumberFormat('es-CO').format(bookingPrice)}</strong>
               </div>
             </div>
 

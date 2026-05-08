@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, DollarSign, Star, TrendingUp, Clock, Users, AlertCircle, MapPin, Scissors } from 'lucide-react';
+import { Calendar, DollarSign, Star, TrendingUp, Clock, Users, AlertCircle, MapPin, Scissors, Check, X } from 'lucide-react';
 import { Card, Avatar, Badge, Button, Tabs } from '../../components/ui';
 import { VerificationBanner } from '../../components/ui/VerificationBanner';
 import { useAuth } from '../../context/AuthContext';
@@ -15,17 +15,19 @@ export default function ProDashboard() {
   const { switchRole, verificationStatus, professionalId } = useAuth();
   const navigate = useNavigate();
   const [apptTab, setApptTab] = useState('upcoming');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4;
 
   // Custom Hooks for Data Management
-  const { appointments, loading: apptsLoading, updatingId, updateStatus } = useAppointments(professionalId);
+  const { appointments, updatingId, updateStatus } = useAppointments(professionalId);
   const { stats, loading: statsLoading } = useProfessionalStats(professionalId);
 
   // Derived Data
   const { upcoming, past, today } = useMemo(() => {
     const todayStr = new Date().toDateString();
     return {
-      upcoming: appointments.filter(a => a.status === 'confirmed' || a.status === 'pending'),
-      past: appointments.filter(a => a.status === 'completed' || a.status === 'cancelled'),
+      upcoming: appointments.filter(a => a.status === 'pending'),
+      past: appointments.filter(a => a.status !== 'pending'),
       today: appointments.filter(a => {
         const d = new Date(a.date);
         return d.toDateString() === todayStr;
@@ -34,6 +36,15 @@ export default function ProDashboard() {
   }, [appointments]);
 
   const apptList = apptTab === 'upcoming' ? upcoming : past;
+  
+  // Pagination Logic
+  const totalPages = Math.ceil(apptList.length / itemsPerPage);
+  const paginatedAppts = apptList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // Reset page when tab changes
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [apptTab]);
 
   const dashStats = [
     { 
@@ -181,13 +192,8 @@ export default function ProDashboard() {
           onChange={setApptTab}
         />
         <div className="pro-appts-list">
-          {apptList.length === 0 && !apptsLoading ? (
-            <div className="pro-appts-empty">
-              <Calendar size={36} style={{ opacity: 0.3 }} />
-              <p>{apptTab === 'upcoming' ? t('proDash.noAppts') : t('proDash.noPastAppts')}</p>
-            </div>
-          ) : (
-            apptList.map((appt: Appointment, i: number) => (
+          {paginatedAppts.length > 0 ? (
+            paginatedAppts.map((appt: Appointment, i: number) => (
               <motion.div key={appt.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                 <Card variant="default" padding="md" className="pro-appt-row">
                   <div className="pro-appt-client">
@@ -199,7 +205,10 @@ export default function ProDashboard() {
                   </div>
                   <div className="pro-appt-datetime">
                     <span className="pro-appt-date">
-                      <Calendar size={13} /> {new Date(appt.date).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' })}
+                      <Calendar size={13} /> {(() => {
+                        const [y, m, d] = appt.date.split('-').map(Number);
+                        return new Date(y, m - 1, d).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
+                      })()}
                     </span>
                     <span className="pro-appt-time"><Clock size={13} /> {appt.startTime}</span>
                   </div>
@@ -214,26 +223,99 @@ export default function ProDashboard() {
                     {appt.price > 0 && <span className="pro-appt-price">${appt.price.toFixed(0)}</span>}
                   </div>
 
-                  <div className="pro-appt-actions" style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-3)', width: '100%', borderTop: '1px solid var(--neutral-100)', paddingTop: 'var(--space-3)' }}>
-                    {appt.status === 'pending' && (
-                      <>
-                        <Button size="sm" variant="accent" onClick={() => updateStatus(appt.id, 'confirmed')} loading={updatingId === appt.id} style={{ flex: 1 }}>
-                          Aceptar
-                        </Button>
-                        <Button size="sm" variant="danger" onClick={() => updateStatus(appt.id, 'cancelled')} disabled={updatingId === appt.id} style={{ flex: 1 }}>
-                          Rechazar
-                        </Button>
-                      </>
-                    )}
-                    {appt.status === 'confirmed' && (
-                      <Button size="sm" variant="primary" onClick={() => updateStatus(appt.id, 'completed')} loading={updatingId === appt.id} style={{ flex: 1 }}>
-                        Finalizar
-                      </Button>
-                    )}
-                  </div>
+                  {appt.status === 'pending' && (
+                    <div className="pro-appt-actions" style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-4)', marginTop: 'var(--space-2)', borderTop: '1px solid var(--neutral-100)', paddingTop: 'var(--space-4)' }}>
+                      <button 
+                        onClick={() => updateStatus(appt.id, 'confirmed')}
+                        disabled={updatingId === appt.id}
+                        style={{
+                          flex: 1,
+                          background: 'linear-gradient(90deg, #f04438 0%, #f79009 100%)',
+                          color: 'white',
+                          border: 'none',
+                          padding: '10px 20px',
+                          borderRadius: '100px',
+                          fontWeight: '700',
+                          fontSize: 'var(--text-sm)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(240, 68, 56, 0.2)',
+                          opacity: updatingId === appt.id ? 0.7 : 1
+                        }}
+                      >
+                        <Check size={16} /> Confirmar
+                      </button>
+                      
+                      <button 
+                        onClick={() => updateStatus(appt.id, 'cancelled')}
+                        disabled={updatingId === appt.id}
+                        style={{
+                          flex: 1,
+                          background: 'none',
+                          border: 'none',
+                          color: '#f04438',
+                          fontWeight: '600',
+                          fontSize: 'var(--text-sm)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <X size={16} /> Cancelar
+                      </button>
+                    </div>
+                  )}
                 </Card>
               </motion.div>
             ))
+          ) : (
+            <div className="pro-appts-empty">
+              <Calendar size={36} style={{ opacity: 0.3 }} />
+              <p>{apptTab === 'upcoming' ? t('proDash.noAppts') : t('proDash.noPastAppts')}</p>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="pro-pagination">
+              <button 
+                disabled={currentPage === 1} 
+                onClick={() => {
+                  setCurrentPage(p => p - 1);
+                  window.scrollTo({ top: 300, behavior: 'smooth' });
+                }}
+                className="pagination-btn"
+              >
+                Anterior
+              </button>
+              <div className="pagination-pages">
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <button 
+                    key={i} 
+                    className={`pagination-dot ${currentPage === i + 1 ? 'active' : ''}`}
+                    onClick={() => {
+                      setCurrentPage(i + 1);
+                      window.scrollTo({ top: 300, behavior: 'smooth' });
+                    }}
+                  />
+                ))}
+              </div>
+              <button 
+                disabled={currentPage === totalPages} 
+                onClick={() => {
+                  setCurrentPage(p => p + 1);
+                  window.scrollTo({ top: 300, behavior: 'smooth' });
+                }}
+                className="pagination-btn"
+              >
+                Siguiente
+              </button>
+            </div>
           )}
         </div>
       </section>
