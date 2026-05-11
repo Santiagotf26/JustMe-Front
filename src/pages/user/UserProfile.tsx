@@ -62,7 +62,9 @@ export default function UserProfile() {
         phone: editPhone,
       });
       // Update local user state
-      setUser({ ...user, name: editName, phone: editPhone });
+      if (user) {
+        setUser({ ...user, name: editName, phone: editPhone });
+      }
       setEditing(false);
       notify('success', t('userProfile.successProfile'), t('userProfile.successProfileDesc'));
     } catch (err: any) {
@@ -71,6 +73,12 @@ export default function UserProfile() {
       setSaving(false);
     }
   };
+
+  // Add Address State
+  const [isAddingAddress, setIsAddingAddress] = useState(false);
+  const [newAddressLabel, setNewAddressLabel] = useState('');
+  const [newAddressText, setNewAddressText] = useState('');
+  const [savingAddress, setSavingAddress] = useState(false);
 
   const handleDetectLocation = () => {
     setDetectingLocation(true);
@@ -81,6 +89,9 @@ export default function UserProfile() {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           });
+          if (user) {
+            setUser({ ...user, latitude: position.coords.latitude, longitude: position.coords.longitude });
+          }
           notify('success', t('userProfile.successLoc'), t('userProfile.successLocDesc'));
         } catch {
           notify('error', t('userProfile.errorTitle'), t('userProfile.errorLoc'));
@@ -93,6 +104,46 @@ export default function UserProfile() {
         setDetectingLocation(false);
       }
     );
+  };
+
+  const handleAddAddress = async () => {
+    if (!newAddressLabel.trim() || !newAddressText.trim()) {
+      notify('error', t('userProfile.errorTitle'), 'Por favor completa todos los campos de la dirección');
+      return;
+    }
+    setSavingAddress(true);
+    try {
+      const currentAddresses = user?.addresses || [];
+      const updatedAddresses = [
+        ...currentAddresses,
+        { id: Date.now().toString(), label: newAddressLabel, address: newAddressText }
+      ];
+      await userService.updateProfile(String(user?.id), { addresses: updatedAddresses });
+      if (user) {
+        setUser({ ...user, addresses: updatedAddresses });
+      }
+      setNewAddressLabel('');
+      setNewAddressText('');
+      setIsAddingAddress(false);
+      notify('success', 'Éxito', 'Dirección agregada correctamente');
+    } catch {
+      notify('error', t('userProfile.errorTitle'), 'Error al guardar la dirección');
+    } finally {
+      setSavingAddress(false);
+    }
+  };
+
+  const handleDeleteAddress = async (idToDelete: string) => {
+    try {
+      const updatedAddresses = (user?.addresses || []).filter((a: any) => a.id !== idToDelete);
+      await userService.updateProfile(String(user?.id), { addresses: updatedAddresses });
+      if (user) {
+        setUser({ ...user, addresses: updatedAddresses });
+      }
+      notify('success', 'Éxito', 'Dirección eliminada');
+    } catch {
+      notify('error', t('userProfile.errorTitle'), 'Error al eliminar la dirección');
+    }
   };
 
   return (
@@ -182,17 +233,50 @@ export default function UserProfile() {
       {/* Addresses */}
       <section className="profile-section">
         <h2><MapPin size={18} /> {t('userProfile.savedAddr')}</h2>
-        {user?.addresses && user.addresses.length > 0 ? (
-          user.addresses.map((addr: any, i: number) => (
-            <Card key={i} variant="default" padding="sm" className="addr-card">
-              <Badge variant="primary" size="sm">{addr.label || addr.title || 'Address'}</Badge>
-              <p>{addr.address}</p>
+        {user && user.addresses && user.addresses.length > 0 ? (
+          user.addresses.map((addr: any) => (
+            <Card key={addr.id} variant="default" padding="sm" className="addr-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <Badge variant="primary" size="sm">{addr.label || addr.title || 'Address'}</Badge>
+                  <p style={{ marginTop: '4px' }}>{addr.address}</p>
+                </div>
+                <Button size="sm" variant="ghost" onClick={() => handleDeleteAddress(addr.id)} style={{ color: 'var(--danger-500)', padding: '4px' }}>
+                  <X size={16} />
+                </Button>
+              </div>
             </Card>
           ))
         ) : (
           <p style={{ color: 'var(--neutral-400)', fontSize: 'var(--text-sm)' }}>{t('userProfile.noAddr')}</p>
         )}
-        <Button variant="ghost" size="sm">{t('userProfile.addAddr')}</Button>
+        
+        {isAddingAddress ? (
+          <div style={{ marginTop: '1rem', padding: '1rem', border: '1px solid var(--neutral-200)', borderRadius: '8px' }}>
+            <input
+              type="text"
+              placeholder="Alias (ej. Casa, Trabajo)"
+              value={newAddressLabel}
+              onChange={(e) => setNewAddressLabel(e.target.value)}
+              style={{ width: '100%', padding: '8px 12px', marginBottom: '8px', borderRadius: '8px', border: '1px solid var(--neutral-200)' }}
+            />
+            <input
+              type="text"
+              placeholder="Dirección completa"
+              value={newAddressText}
+              onChange={(e) => setNewAddressText(e.target.value)}
+              style={{ width: '100%', padding: '8px 12px', marginBottom: '8px', borderRadius: '8px', border: '1px solid var(--neutral-200)' }}
+            />
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <Button size="sm" onClick={handleAddAddress} loading={savingAddress}>{t('userProfile.save')}</Button>
+              <Button size="sm" variant="ghost" onClick={() => setIsAddingAddress(false)}>{t('userProfile.cancel')}</Button>
+            </div>
+          </div>
+        ) : (
+          <Button variant="ghost" size="sm" onClick={() => setIsAddingAddress(true)} style={{ marginTop: '8px' }}>
+            + {t('userProfile.addAddr')}
+          </Button>
+        )}
       </section>
 
       {/* Favorites */}
