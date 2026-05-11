@@ -19,6 +19,13 @@ export const userService = {
     return response.data;
   },
 
+  updateProfileImage: async (id: string, formData: FormData) => {
+    const response = await apiClient.patch(`/users/${id}/profile`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
   adminUpdateUser: async (id: string | number, data: any) => {
     const response = await apiClient.put(`/users/${id}`, data);
     return response.data;

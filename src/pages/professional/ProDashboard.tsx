@@ -194,7 +194,7 @@ export default function ProDashboard() {
                       <span>{b.locationType === 'home' ? t('proDash.homeService') : t('proDash.atStudio')}</span>
                     </div>
                     <div className="pro-appt-status-price">
-                      <Badge variant={statusColors[b.status] || 'primary'} size="sm">{t(`appointments.status.${b.status}`, b.status)}</Badge>
+                      <Badge variant={statusColors[b.status] || 'primary'} size="sm">{String(t(`appointments.status.${b.status}`, b.status))}</Badge>
                       {b.price && <span className="pro-appt-price">${parseFloat(b.price).toFixed(0)}</span>}
                     </div>
                   </Card>

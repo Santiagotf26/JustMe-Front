@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/shared/api/axiosClient';
-import { useAuthStore } from '@/entities/session/model/store';
+import { apiClient } from '../../../shared/api/axiosClient';
+import { useAuthStore } from '../../../entities/session/model/store';
 import { MapPin, Loader2, Plus, Trash2 } from 'lucide-react';
 
 export interface Address {
@@ -24,7 +24,7 @@ export const AddressManager = ({ addresses = [] }: { addresses?: Address[] }) =>
   
   const addAddressMutation = useMutation({
     mutationFn: async (newAddress: Omit<Address, 'id'>) => {
-      const { data } = await apiClient.post(\`/users/\${user?.id}/addresses\`, newAddress);
+      const { data } = await apiClient.post(`/users/${user?.id}/addresses`, newAddress);
       return data;
     },
     onSuccess: () => {
@@ -36,7 +36,7 @@ export const AddressManager = ({ addresses = [] }: { addresses?: Address[] }) =>
 
   const removeAddressMutation = useMutation({
     mutationFn: async (addressId: string) => {
-      await apiClient.delete(\`/users/\${user?.id}/addresses/\${addressId}\`);
+      await apiClient.delete(`/users/${user?.id}/addresses/${addressId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user', 'addresses'] });

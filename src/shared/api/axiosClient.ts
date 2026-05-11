@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import { useAuthStore } from '@/entities/session/model/store';
+import { useAuthStore } from '../../entities/session/model/store';
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
@@ -15,7 +15,7 @@ apiClient.interceptors.request.use(
     // Obtenemos el token directamente del estado de Zustand
     const token = useAuthStore.getState().token;
     if (token && config.headers) {
-      config.headers.Authorization = \`Bearer \${token}\`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },

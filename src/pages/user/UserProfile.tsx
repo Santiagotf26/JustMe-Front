@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, type ChangeEvent, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Camera, MapPin, Heart, CreditCard, Star, Edit3, Save, X, Loader, Navigation } from 'lucide-react';
 import { Card, Avatar, Button, Badge } from '../../components/ui';
@@ -8,7 +8,7 @@ import { useBookings } from '../../hooks/useBookings';
 import { userService } from '../../services/userService';
 import { useNotification } from '../../context/NotificationContext';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+
 import { useTranslation } from 'react-i18next';
 import './UserProfile.css';
 
@@ -23,6 +23,8 @@ export default function UserProfile() {
   const [editName, setEditName] = useState(user?.name || '');
   const [editPhone, setEditPhone] = useState(user?.phone || '');
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Favorites & payments from API
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -71,6 +73,29 @@ export default function UserProfile() {
       notify('error', t('userProfile.errorTitle'), err?.response?.data?.message || t('userProfile.errorUpdate'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+    
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('profileImage', file);
+      
+      const response = await userService.updateProfileImage(String(user.id), formData);
+      
+      if (user) {
+        setUser({ ...user, avatar: response.data?.profileImage || response.data?.avatar || URL.createObjectURL(file) });
+      }
+      notify('success', t('userProfile.successProfile'), 'Foto de perfil actualizada correctamente');
+    } catch (err: any) {
+      notify('error', t('userProfile.errorTitle'), err?.response?.data?.message || 'Error al subir la imagen');
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -152,7 +177,20 @@ export default function UserProfile() {
       <motion.div className="profile-header" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <div className="profile-avatar-wrap">
           <Avatar src={user?.avatar} name={user?.name || 'User'} size="xl" />
-          <button className="avatar-edit"><Camera size={14} /></button>
+          <button 
+            className="avatar-edit" 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingImage}
+          >
+            {uploadingImage ? <Loader size={14} className="animate-spin" /> : <Camera size={14} />}
+          </button>
+          <input 
+            type="file" 
+            accept="image/*" 
+            ref={fileInputRef} 
+            onChange={handleImageChange} 
+            style={{ display: 'none' }}
+          />
         </div>
 
         {editing ? (
