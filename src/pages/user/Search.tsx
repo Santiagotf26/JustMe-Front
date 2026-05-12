@@ -87,6 +87,7 @@ export default function SearchPage() {
   const [panelExpanded, setPanelExpanded] = useState(true);
 
   // Booking
+  // Booking
   const [, setBookingSlot] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
 
@@ -194,10 +195,8 @@ export default function SearchPage() {
   const handleSelectPro = async (id: string) => {
     setSelectedProId(id);
     setPhase('profile');
-    setBookingSlot('');
     
     // Fetch detailed real professional data
-    setLoadingProDetails(true);
     try {
       const details = await professionalsService.getProfessionalById(String(id));
       setSelectedProDetails({
@@ -208,29 +207,25 @@ export default function SearchPage() {
       });
     } catch (e) {
       console.error('Failed to fetch pro details', e);
-    } finally {
-      setLoadingProDetails(false);
     }
   };
   const handleStartBooking = async (id: string) => {
     setSelectedProId(id);
-    // Removed unused pro calculation
+    const pro = favorites.find(p => String(p.id) === id) || nearby.find(p => String(p.id) === id);
     
     setPhase('booking');
-    setBookingSlot('');
     setPanelExpanded(true);
     
-    setSelectedServicesList([{ name: selectedService }]); 
-    
-    setLoadingSlots(true);
     try {
-      const data = await scheduleService.getAvailableSlots(Number(id), selectedDate);
-      setAvailableSlots(data.slots || []);
+      // Find the selected service duration, default to 60 if not found
+      const matchSvc = pro?.professionalServices?.find((ps: any) => 
+        ps.service?.name === selectedService || ps.service?.category === selectedService
+      );
+      const duration = matchSvc?.duration || 60;
+      
+      await scheduleService.getAvailableSlots(Number(id), selectedDate, duration);
     } catch (e) {
       console.error('Failed to fetch slots', e);
-      setAvailableSlots([]);
-    } finally {
-      setLoadingSlots(false);
     }
   };
 
@@ -288,7 +283,6 @@ export default function SearchPage() {
     setSelectedDate('');
     setSelectedTime('');
     setSelectedProId(null);
-    setBookingSlot('');
     setPanelExpanded(true);
   };
 

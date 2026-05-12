@@ -21,9 +21,15 @@ apiClient.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error)
 );
 
-// Response Interceptor: Handle global errors (e.g., 401 Unauthorized)
+// Response Interceptor: Handle global errors and unwrap standard API responses
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    // Unwrap the standard backend response format { success: true, data: ... }
+    if (response.data && response.data.success !== undefined && response.data.data !== undefined) {
+      response.data = response.data.data;
+    }
+    return response;
+  },
   (error: AxiosError) => {
     if (error.response?.status === 401) {
       console.warn('Unauthorized access - clearing session');

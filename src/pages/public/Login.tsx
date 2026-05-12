@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { validateEmail, validatePassword } from '../../utils/validators';
+import { resolvePostLoginDashboard } from '../../utils/roleRedirect';
 import './Login.css';
 
 export default function Login() {
@@ -37,12 +38,11 @@ export default function Login() {
         try {
           await loginWithToken(token, roleParam);
           
-          const userRole = localStorage.getItem('justme_role') || 'user';
+          // Resolve dashboard using for...of over roles/permissions
+          const storedRole = localStorage.getItem('justme_role') || 'user';
+          const dashboardPath = resolvePostLoginDashboard([{ id: 0, name: storedRole }]);
           notify('success', 'Bienvenido de nuevo!', 'Sesión iniciada correctamente.');
-
-          if (userRole === 'admin') navigate('/admin');
-          else if (userRole === 'professional') navigate('/professional');
-          else navigate('/user');
+          navigate(dashboardPath);
         } catch (err: any) {
           setApiError('Error al iniciar sesión con Google.');
         } finally {
@@ -85,12 +85,11 @@ export default function Login() {
     try {
       await login({ email, password });
       
-      const userRole = localStorage.getItem('justme_role') || 'user';
+      // Resolve dashboard using for...of over roles/permissions
+      const storedRole = localStorage.getItem('justme_role') || 'user';
+      const dashboardPath = resolvePostLoginDashboard([{ id: 0, name: storedRole }]);
       notify('success', 'Bienvenido de nuevo!', 'Sesión iniciada correctamente.');
-
-      if (userRole === 'admin') navigate('/admin');
-      else if (userRole === 'professional') navigate('/professional');
-      else navigate('/user');
+      navigate(dashboardPath);
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Credenciales inválidas.';
       setApiError(typeof msg === 'string' ? msg : msg[0]);

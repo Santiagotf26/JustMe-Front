@@ -105,6 +105,7 @@ export default function Booking() {
         date: selectedDate,
         startTime: selectedTime,
         locationType: locationType,
+        price: selectedSvc?.price || pro.price || 0,
       } as any);
 
       // Try payment if available
