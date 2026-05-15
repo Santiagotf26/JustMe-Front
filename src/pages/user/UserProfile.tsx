@@ -18,6 +18,15 @@ export default function UserProfile() {
   const navigate = useNavigate();
   const { notify } = useNotification();
   const { t } = useTranslation();
+  
+  const formatCOP = (val: number | string) => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+    }).format(num || 0).replace('COP', '$');
+  };
 
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');
@@ -352,7 +361,7 @@ export default function UserProfile() {
           payments.slice(0, 5).map((p: any) => (
             <Card key={p.id} variant="default" padding="sm" className="payment-row">
               <div className="pay-info"><p className="pay-desc">{p.description || p.type}</p><p className="pay-date">{p.date || new Date(p.createdAt).toLocaleDateString()}</p></div>
-              <span className="pay-amount">-${parseFloat(p.amount || 0).toFixed(2)}</span>
+              <span className="pay-amount">-{formatCOP(p.amount || 0)}</span>
             </Card>
           ))
         )}

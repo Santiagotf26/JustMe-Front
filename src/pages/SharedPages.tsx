@@ -112,7 +112,7 @@ export function ProBookingRequests() {
                       <p style={subStyle}>{b.locationType === 'home' ? <><Home size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {t('sharedPages.pro.homeService') || 'Home'}</> : <><MapPin size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {t('sharedPages.pro.atStudio') || 'Studio'}</>} • ${parseFloat(b.price || 0).toFixed(2)}</p>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 'var(--space-2)' }}>
-                      <Badge variant={b.status === 'confirmed' ? 'primary' : b.status === 'completed' ? 'success' : b.status === 'cancelled' ? 'error' : 'warning'}>{b.status}</Badge>
+                      <Badge variant={b.status === 'confirmed' ? 'success' : b.status === 'completed' ? 'default' : b.status === 'cancelled' ? 'error' : 'warning'}>{b.status}</Badge>
 
                       <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
                         {b.status === 'pending' && (
@@ -143,25 +143,36 @@ export function ProBookingRequests() {
 export function ProCalendar() {
   const { professionalId } = useAuth();
   const [bookings, setBookings] = React.useState<any[]>([]);
+  const [schedule, setSchedule] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
   const [currentWeekOffset, setCurrentWeekOffset] = React.useState(0);
   const [selectedBooking, setSelectedBooking] = React.useState<any>(null);
-  const { t } = useTranslation();
+  const [now, setNow] = React.useState(new Date());
+  const { t, i18n } = useTranslation();
   const { notify } = useNotification();
 
   const fetchBookings = () => {
     if (!professionalId) { setLoading(false); return; }
-    bookingService.getProfessionalBookings(professionalId)
-      .then(data => {
-        const list = Array.isArray(data) ? data : (data?.data || []);
-        setBookings(list);
-      })
-      .catch(() => setBookings([]))
-      .finally(() => setLoading(false));
+    setLoading(true);
+    Promise.all([
+      bookingService.getProfessionalBookings(professionalId),
+      professionalsService.getProfessionalById(professionalId)
+    ]).then(([bookingsData, proData]) => {
+      const list = Array.isArray(bookingsData) ? bookingsData : (bookingsData?.data || []);
+      setBookings(list);
+      setSchedule(proData?.schedules || []);
+    })
+    .catch((e) => {
+      console.error("Calendar fetch error:", e);
+      setBookings([]);
+    })
+    .finally(() => setLoading(false));
   };
 
   React.useEffect(() => {
     fetchBookings();
+    const interval = setInterval(() => setNow(new Date()), 60000); // Update every minute
+    return () => clearInterval(interval);
   }, [professionalId]);
 
   const handleUpdateStatus = async (id: string | number, status: string) => {
@@ -176,21 +187,38 @@ export function ProCalendar() {
   };
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const hours = Array.from({ length: 14 }, (_, i) => `${7 + i}:00`);
+  const englishToFull = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
+  const hours = Array.from({ length: 15 }, (_, i) => `${7 + i}:00`);
 
   const getDayDate = (dayIndex: number) => {
     const date = new Date();
-    // Ajustar al lunes de la semana actual + offset
     const currentDay = date.getDay() === 0 ? 7 : date.getDay();
     date.setDate(date.getDate() - currentDay + 1 + dayIndex + (currentWeekOffset * 7));
     return date;
   };
 
+  const isWorkingHour = (dayName: string, hour: number) => {
+    if (!schedule) return true;
+    const fullDay = (englishToFull as any)[dayName];
+    const daySched = schedule.find((s: any) => s.dayOfWeek === fullDay);
+    if (!daySched || !daySched.isActive) return false;
+    
+    const startH = parseInt(daySched.startTime.split(':')[0]);
+    const endH = parseInt(daySched.endTime.split(':')[0]);
+    return hour >= startH && hour < endH;
+  };
+
   const getBookingsForSlot = (hour: number, dayDate: Date) => {
     return bookings.filter((b: any) => {
-      const bDate = new Date(b.scheduledAt || b.date || Date.now());
+      const dateStr = b.scheduledAt || b.date || '';
+      if (!dateStr) return false;
+      const [y, m, d] = dateStr.split('T')[0].split('-').map(Number);
+      const bDate = new Date(y, m - 1, d);
+      
       const bHour = b.startTime ? parseInt(b.startTime.split(':')[0]) : bDate.getHours();
-      return bDate.toDateString() === dayDate.toDateString() && bHour === hour && (b.status === 'confirmed' || b.status === 'pending');
+      
+      return bDate.toDateString() === dayDate.toDateString() && bHour === hour && 
+             (b.status === 'confirmed' || b.status === 'pending' || b.status === 'completed');
     });
   };
 
@@ -199,61 +227,113 @@ export function ProCalendar() {
   return (
     <div style={pageStyle}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
-        <h1 style={{ ...headerStyle, marginBottom: 0 }}>{t('sharedPages.pro.calTitle') || 'Calendar'}</h1>
+        <h1 style={{ ...headerStyle, marginBottom: 0 }}>{t('sharedPages.pro.calTitle', 'Mi Calendario')}</h1>
         <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-          <Button size="sm" variant="ghost" onClick={() => setCurrentWeekOffset(prev => prev - 1)}>Prev Week</Button>
-          <Button size="sm" variant="ghost" onClick={() => setCurrentWeekOffset(0)}>Today</Button>
-          <Button size="sm" variant="ghost" onClick={() => setCurrentWeekOffset(prev => prev + 1)}>Next Week</Button>
+          <Button size="sm" variant="ghost" onClick={() => setCurrentWeekOffset(prev => prev - 1)}>{t('common.prevWeek', 'Anterior')}</Button>
+          <Button size="sm" variant="ghost" onClick={() => setCurrentWeekOffset(0)}>{t('common.today', 'Hoy')}</Button>
+          <Button size="sm" variant="ghost" onClick={() => setCurrentWeekOffset(prev => prev + 1)}>{t('common.nextWeek', 'Siguiente')}</Button>
         </div>
       </div>
 
-      <Card variant="default" padding="md">
-        <div style={{ display: 'grid', gridTemplateColumns: '50px repeat(7, 1fr)', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-          <div /> {/* Empty corner */}
+      <Card variant="default" padding="md" style={{ position: 'relative' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', borderBottom: '1px solid var(--neutral-100)', paddingBottom: 'var(--space-2)' }}>
+          <div /> 
           {days.map((d, i) => {
             const date = getDayDate(i);
             const isToday = new Date().toDateString() === date.toDateString();
             return (
-              <div key={d} style={{ textAlign: 'center', minWidth: 60, padding: 'var(--space-2)', background: isToday ? 'var(--primary-50)' : 'transparent', borderRadius: 'var(--radius-md)' }}>
-                <p style={{ fontSize: 'var(--text-xs)', color: isToday ? 'var(--primary-600)' : 'var(--neutral-400)', fontWeight: isToday ? 700 : 500 }}>{d}</p>
-                <p style={{ fontWeight: 700, color: isToday ? 'var(--primary-700)' : 'var(--neutral-900)' }}>{date.getDate()}</p>
+              <div key={d} style={{ textAlign: 'center', padding: 'var(--space-1)' }}>
+                <p style={{ fontSize: 'var(--text-xs)', color: isToday ? 'var(--primary-600)' : 'var(--neutral-400)', fontWeight: isToday ? 700 : 500, textTransform: 'uppercase' }}>{d}</p>
+                <p style={{ fontSize: 'var(--text-lg)', fontWeight: 800, color: isToday ? 'var(--primary-600)' : 'var(--neutral-900)' }}>{date.getDate()}</p>
               </div>
             );
           })}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', maxHeight: '600px', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', maxHeight: '700px', overflowY: 'auto', position: 'relative' }}>
+          {/* Current Time Indicator */}
+          {currentWeekOffset === 0 && (
+            <div style={{ 
+              position: 'absolute', 
+              top: `${((now.getHours() - 7) * 60 + now.getMinutes()) * (70 / 60) + 0}px`, 
+              left: '60px', 
+              right: 0, 
+              height: '2px', 
+              background: 'var(--error-500)', 
+              zIndex: 10,
+              pointerEvents: 'none'
+            }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--error-500)', position: 'absolute', left: -4, top: -3 }} />
+            </div>
+          )}
+
           {hours.map((h) => {
             const hourNum = parseInt(h);
             return (
-              <div key={h} style={{ display: 'grid', gridTemplateColumns: '50px repeat(7, 1fr)', gap: 'var(--space-2)', borderBottom: '1px solid var(--neutral-100)', minHeight: '60px' }}>
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-400)', paddingTop: 'var(--space-2)' }}>{h}</span>
-                {days.map((_, i) => {
+              <div key={h} style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', gap: 'var(--space-2)', borderBottom: '1px solid var(--neutral-50)', minHeight: '70px' }}>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-400)', textAlign: 'right', paddingRight: '12px', paddingTop: '4px', fontWeight: 600 }}>{h}</span>
+                {days.map((d, i) => {
                   const dayDate = getDayDate(i);
                   const slotBookings = getBookingsForSlot(hourNum, dayDate);
+                  const active = isWorkingHour(d, hourNum);
 
                   return (
-                    <div key={`${h}-${i}`} style={{ padding: 'var(--space-1)' }}>
-                      {slotBookings.map((b, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => setSelectedBooking(b)}
-                          style={{
-                            background: b.status === 'confirmed' ? 'var(--primary-100)' : 'var(--warning-100)',
-                            color: b.status === 'confirmed' ? 'var(--primary-700)' : 'var(--warning-700)',
-                            fontSize: '10px',
-                            padding: '4px 6px',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            marginBottom: '2px',
-                            overflow: 'hidden',
-                            whiteSpace: 'nowrap',
-                            textOverflow: 'ellipsis',
-                            fontWeight: 600
-                          }}>
-                          {b.client?.name || b.user?.name || 'Client'}
-                        </div>
-                      ))}
+                    <div key={`${h}-${i}`} style={{ 
+                      background: active ? 'transparent' : 'var(--neutral-50)',
+                      opacity: active ? 1 : 0.6,
+                      borderLeft: '1px solid var(--neutral-50)',
+                      position: 'relative'
+                    }}>
+                      {slotBookings.map((b, idx) => {
+                        const startMin = b.startTime ? parseInt(b.startTime.split(':')[1]) : 0;
+                        const duration = b.professionalService?.duration || 60; // 1 hora por defecto
+                        const topPercent = (startMin / 60) * 100;
+                        const heightPx = (duration / 60) * 70; // 70px es la altura de la fila
+                        
+                        // Desplazamiento visual para evitar solapamientos si hay 2 citas a la misma hora exacta
+                        const leftOffset = idx * 10;
+                        const widthStr = `calc(100% - ${leftOffset}px - 4px)`;
+                        
+                        // Nombres limpios
+                        const clientName = b.client?.name || b.user?.name || 'Cliente';
+                        const svcName = b.professionalService?.name || b.professionalService?.service?.name || b.serviceName || 'Servicio';
+
+                        return (
+                          <motion.div
+                            key={b.id}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            onClick={() => setSelectedBooking(b)}
+                            style={{
+                              position: 'absolute',
+                              top: `${topPercent}%`,
+                              height: `${Math.max(heightPx, 25)}px`, // Mínimo 25px para que sea clickeable
+                              left: `${leftOffset + 2}px`,
+                              width: widthStr,
+                              zIndex: 5 + idx,
+                              background: b.status === 'confirmed' ? 'var(--success-100)' : b.status === 'completed' ? 'var(--neutral-100)' : 'var(--warning-100)',
+                              color: b.status === 'confirmed' ? 'var(--success-700)' : b.status === 'completed' ? 'var(--neutral-600)' : 'var(--warning-700)',
+                              fontSize: '11px',
+                              padding: '4px 6px',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              borderLeft: `4px solid ${b.status === 'confirmed' ? 'var(--success-500)' : b.status === 'completed' ? 'var(--neutral-400)' : 'var(--warning-500)'}`,
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                              fontWeight: 600,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '2px',
+                              overflow: 'hidden'
+                            }}>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '10px' }}>
+                              {b.startTime} - {clientName}
+                            </span>
+                            <span style={{ fontSize: '10px', opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {svcName}
+                            </span>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   );
                 })}
@@ -263,40 +343,63 @@ export function ProCalendar() {
         </div>
       </Card>
 
-      <Modal isOpen={!!selectedBooking} onClose={() => setSelectedBooking(null)} title={t('appointments.details') || 'Booking Details'}>
+      <Modal isOpen={!!selectedBooking} onClose={() => setSelectedBooking(null)} title={t('appointments.details', 'Detalles de la Cita')}>
         {selectedBooking && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', minWidth: '320px', padding: 'var(--space-2)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', minWidth: '340px', padding: 'var(--space-2)' }}>
             <div style={rowStyle}>
-              <Avatar src={selectedBooking.user?.avatar} name={selectedBooking.user?.name || selectedBooking.client?.name} size="md" />
+              <Avatar src={selectedBooking.user?.avatar} name={selectedBooking.user?.name || selectedBooking.client?.name} size="lg" />
+              <div style={flexStyle}>
+                <p style={{ fontWeight: 700, fontSize: 'var(--text-lg)' }}>{selectedBooking.user?.name || selectedBooking.client?.name || 'Cliente'}</p>
+                <p style={{ color: 'var(--primary-600)', fontWeight: 600 }}>{selectedBooking.professionalService?.name || selectedBooking.professionalService?.service?.name || selectedBooking.serviceName || 'Servicio'}</p>
+              </div>
+              <Badge variant={selectedBooking.status === 'confirmed' ? 'success' : selectedBooking.status === 'completed' ? 'default' : selectedBooking.status === 'cancelled' ? 'error' : 'warning'}>{
+                selectedBooking.status === 'pending' ? 'Pendiente' : 
+                selectedBooking.status === 'confirmed' ? 'Confirmada' : 
+                selectedBooking.status === 'completed' ? 'Completada' : 'Cancelada'
+              }</Badge>
+            </div>
+            
+            <div style={{ background: 'var(--neutral-50)', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
               <div>
-                <p style={{ fontWeight: 600 }}>{selectedBooking.user?.name || selectedBooking.client?.name || 'Client'}</p>
-                <p style={subStyle}>{selectedBooking.professionalService?.service?.name || selectedBooking.service?.name || selectedBooking.serviceName || 'Service'}</p>
+                <p style={subStyle}><Calendar size={12} /> Fecha</p>
+                <p style={{ fontWeight: 600 }}>{
+                  (() => {
+                    const dateStr = selectedBooking.scheduledAt || selectedBooking.date || '';
+                    if (!dateStr) return '';
+                    const [y, m, d] = dateStr.split('T')[0].split('-').map(Number);
+                    return new Date(y, m - 1, d).toLocaleDateString();
+                  })()
+                }</p>
               </div>
-              <div style={{ marginLeft: 'auto' }}>
-                <Badge variant={selectedBooking.status === 'confirmed' ? 'primary' : selectedBooking.status === 'completed' ? 'success' : selectedBooking.status === 'cancelled' ? 'error' : 'warning'}>{selectedBooking.status}</Badge>
+              <div>
+                <p style={subStyle}><Clock size={12} /> Hora</p>
+                <p style={{ fontWeight: 600 }}>{selectedBooking.startTime || selectedBooking.time}</p>
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <p style={subStyle}><MapPin size={12} /> Ubicación</p>
+                <p style={{ fontWeight: 600 }}>{selectedBooking.locationType === 'home' ? 'A Domicilio' : 'En el Estudio'}</p>
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <p style={subStyle}><DollarSign size={12} /> Precio</p>
+                <p style={{ fontWeight: 800, fontSize: 'var(--text-lg)', color: 'var(--success-600)' }}>${parseFloat(selectedBooking.price || 0).toFixed(2)}</p>
               </div>
             </div>
-            <div style={{ background: 'var(--neutral-50)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
-              <p style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--space-2)' }}><Calendar size={14} style={{ display: 'inline', marginRight: 4, color: 'var(--neutral-400)' }} /> {new Date(selectedBooking.scheduledAt || selectedBooking.date).toLocaleDateString()}</p>
-              <p style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--space-2)' }}><Clock size={14} style={{ display: 'inline', marginRight: 4, color: 'var(--neutral-400)' }} /> {selectedBooking.startTime || selectedBooking.time}</p>
-              <p style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--space-2)' }}><MapPin size={14} style={{ display: 'inline', marginRight: 4, color: 'var(--neutral-400)' }} /> {selectedBooking.locationType === 'home' ? 'Home Service' : 'Studio'} {selectedBooking.location ? `(${selectedBooking.location})` : ''}</p>
-              <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}><DollarSign size={14} style={{ display: 'inline', marginRight: 4, color: 'var(--neutral-400)' }} /> ${parseFloat(selectedBooking.price || 0).toFixed(2)}</p>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
+
+            <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
               {selectedBooking.status === 'pending' && (
                 <>
-                  <Button variant="ghost" onClick={() => handleUpdateStatus(selectedBooking.id, 'cancelled')}>{t('sharedPages.pro.cancel') || 'Cancel'}</Button>
-                  <Button onClick={() => handleUpdateStatus(selectedBooking.id, 'confirmed')}>{t('common.confirm') || 'Confirm'}</Button>
+                  <Button variant="ghost" style={{ flex: 1 }} onClick={() => handleUpdateStatus(selectedBooking.id, 'cancelled')}>{t('sharedPages.pro.cancel', 'Cancelar Cita')}</Button>
+                  <Button style={{ flex: 1 }} onClick={() => handleUpdateStatus(selectedBooking.id, 'confirmed')}>{t('common.confirm', 'Confirmar Cita')}</Button>
                 </>
               )}
               {selectedBooking.status === 'confirmed' && (
                 <>
-                  <Button variant="ghost" onClick={() => handleUpdateStatus(selectedBooking.id, 'cancelled')}>{t('sharedPages.pro.cancel') || 'Cancel'}</Button>
-                  <Button variant="primary" onClick={() => handleUpdateStatus(selectedBooking.id, 'completed')}>{t('appointments.status.completed') || 'Complete'}</Button>
+                  <Button variant="ghost" style={{ flex: 1 }} onClick={() => handleUpdateStatus(selectedBooking.id, 'cancelled')}>{t('sharedPages.pro.cancel', 'Cancelar Cita')}</Button>
+                  <Button variant="primary" style={{ flex: 1 }} onClick={() => handleUpdateStatus(selectedBooking.id, 'completed')}>{t('appointments.status.completed', 'Marcar Completada')}</Button>
                 </>
               )}
               {(selectedBooking.status === 'completed' || selectedBooking.status === 'cancelled') && (
-                <Button onClick={() => setSelectedBooking(null)}>{t('common.close') || 'Close'}</Button>
+                <Button style={{ width: '100%' }} onClick={() => setSelectedBooking(null)}>{t('common.close', 'Cerrar')}</Button>
               )}
             </div>
           </div>

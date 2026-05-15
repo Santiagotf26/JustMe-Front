@@ -88,16 +88,11 @@ export default function SearchPage() {
 
   // Booking
   // Booking
-  const [, setBookingSlot] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
 
   const [backendPros, setBackendPros] = useState<any[]>([]);
   const [loadingPros, setLoadingPros] = useState(false);
-  const [, setAvailableSlots] = useState<string[]>([]);
-  const [, setLoadingSlots] = useState(false);
   const [selectedProDetails, setSelectedProDetails] = useState<any>(null);
-  const [, setLoadingProDetails] = useState(false);
-  const [, setSelectedServicesList] = useState<any[]>([]);
 
   // Fetch initial nearby professionals on load
   useEffect(() => {

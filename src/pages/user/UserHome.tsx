@@ -37,6 +37,15 @@ export default function UserHome() {
   const geo = useGeolocation();
   const { t } = useTranslation();
 
+  const formatCOP = (val: number | string) => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+    }).format(num || 0).replace('COP', '$');
+  };
+
   const [dbCategories, setDbCategories] = useState<any[]>([]);
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -207,7 +216,7 @@ export default function UserHome() {
                   </div>
                   <div className="pro-card-meta">
                     <span className="pro-distance"><MapPin size={13} /> {(pro.distance || 0).toFixed(1)} {t('userHome.distanceUnit')}</span>
-                    <span className="pro-price">{t('userHome.fromPrice')} ${pro.price || pro.services?.[0]?.price || 0}</span>
+                    <span className="pro-price">{t('userHome.fromPrice')} {formatCOP(pro.price || pro.services?.[0]?.price || 0)}</span>
                   </div>
                 </Card>
               </motion.div>

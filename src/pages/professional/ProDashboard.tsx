@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, DollarSign, Star, TrendingUp, Clock, Users, AlertCircle, MapPin, Scissors, Check, X } from 'lucide-react';
 import { Card, Avatar, Badge, Button, Tabs } from '../../components/ui';
@@ -17,10 +17,19 @@ export default function ProDashboard() {
   const [apptTab, setApptTab] = useState('upcoming');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
+  
+  const formatCOP = (val: number | string) => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+    }).format(num || 0).replace('COP', '$');
+  };
 
   // Custom Hooks for Data Management
   const { appointments, updatingId, updateStatus } = useAppointments(professionalId);
-  const { stats, loading: statsLoading } = useProfessionalStats(professionalId);
+  const { stats, loading: statsLoading, refetch } = useProfessionalStats(professionalId);
 
   // Derived Data
   const { upcoming, past, today } = useMemo(() => {
@@ -42,9 +51,18 @@ export default function ProDashboard() {
   const paginatedAppts = apptList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // Reset page when tab changes
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [apptTab]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [refetch]);
+
+  const walletBalance = stats?.walletBalance || 0;
 
   const dashStats = [
     { 
@@ -56,7 +74,7 @@ export default function ProDashboard() {
     },
     { 
       label: t('proDash.stats.weeklyEarnings'), 
-      value: stats?.weeklyEarnings ? `$${stats.weeklyEarnings}` : `$${stats?.totalRevenue || 0}`, 
+      value: formatCOP(stats?.weeklyEarnings || 0), 
       icon: <DollarSign size={20} />, 
       color: 'var(--success-500)', 
       bg: 'var(--success-50)' 
@@ -69,22 +87,21 @@ export default function ProDashboard() {
       bg: '#fbbf2415' 
     },
     { 
-      label: t('proDash.stats.totalClients'), 
-      value: String(stats?.totalClients || stats?.completedBookings || appointments.length), 
-      icon: <Users size={20} />, 
-      color: 'var(--accent-500)', 
-      bg: 'var(--accent-100)' 
+      label: t('proDash.walletBalance', 'Saldo Disponible'), 
+      value: formatCOP(walletBalance), 
+      icon: <DollarSign size={20} />, 
+      color: 'var(--success-500)', 
+      bg: 'var(--success-50)' 
     },
   ];
 
-  const statusColors: Record<string, 'primary' | 'success' | 'warning' | 'error'> = {
+  const statusColors: Record<string, 'primary' | 'success' | 'warning' | 'error' | 'default'> = {
     pending: 'warning', 
-    confirmed: 'primary', 
-    completed: 'success', 
+    confirmed: 'success', 
+    completed: 'default', 
     cancelled: 'error',
   };
 
-  const walletBalance = stats?.totalRevenue || 0;
 
   return (
     <div className="pro-dash">
@@ -93,9 +110,7 @@ export default function ProDashboard() {
       <div className="pro-dash-header">
         <div>
           <h1>{t('proDash.title')}</h1>
-          <p className="dash-date">
-            {new Date().toLocaleDateString(i18n.language, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-          </p>
+          <p className="dash-date">{new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
         <Button size="sm" variant="secondary" onClick={() => { switchRole('user'); navigate('/user'); }}>
           {t('proDash.switchBtn')}
@@ -131,8 +146,8 @@ export default function ProDashboard() {
       <Card variant="gradient" padding="lg" className="earnings-overview-card">
         <div className="earnings-top">
           <div>
-            <p className="earnings-label">{t('proDash.earningsOverview')}</p>
-            <h2 className="earnings-amount">${stats?.monthlyEarnings || stats?.totalRevenue || 0}</h2>
+            <p className="earnings-label">{t('proDash.earningsOverview', 'Ganancias de este mes')}</p>
+            <h2 className="earnings-amount">{formatCOP(stats?.monthlyEarnings || 0)}</h2>
           </div>
           <div className="earnings-trend">
             <TrendingUp size={16} /> {stats?.monthlyTrend || stats?.growthPercent || 0}%
@@ -145,7 +160,7 @@ export default function ProDashboard() {
               <div key={i} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.2)', height: `${Math.max(20, Math.random() * 100)}%`, borderRadius: '4px' }} />
             ))}
           </div>
-        ) : (!stats?.weeklyEarningsByDay || Math.max(...(stats.weeklyEarningsByDay as number[])) === 0) ? (
+        ) : (!stats?.weeklyEarningsByDay || !Array.isArray(stats.weeklyEarningsByDay) || stats.weeklyEarningsByDay.length === 0 || Math.max(...stats.weeklyEarningsByDay) === 0) ? (
           <div style={{ height: '150px', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'rgba(255,255,255,0.7)', fontSize: 'var(--text-sm)', textAlign: 'center' }}>
             {t('proDash.noData', 'No hay datos de ingresos disponibles para esta semana.')}
           </div>
@@ -153,18 +168,19 @@ export default function ProDashboard() {
           <>
             <div className="earnings-bar-container">
               {(() => {
-                const maxVal = Math.max(...(stats.weeklyEarningsByDay as number[]), 1);
-                return (stats.weeklyEarningsByDay as number[]).map((h: number, i: number) => {
+                const earnings = Array.isArray(stats.weeklyEarningsByDay) ? stats.weeklyEarningsByDay : [0,0,0,0,0,0,0];
+                const maxVal = Math.max(...earnings, 1);
+                return earnings.map((h: number, i: number) => {
                   const relativeHeight = (h / maxVal) * 100;
                   return (
                     <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: '4px' }}>
-                      <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.8)', opacity: h > 0 ? 1 : 0 }}>${h}</span>
+                      <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.8)', opacity: h > 0 ? 1 : 0 }}>{formatCOP(h)}</span>
                       <motion.div 
-                        className="earnings-bar" 
-                        style={{ width: '100%' }}
-                        initial={{ height: 0 }} 
-                        animate={{ height: `${relativeHeight}%` }} 
-                        transition={{ delay: 0.3 + i * 0.08, duration: 0.5 }} 
+                         className="earnings-bar" 
+                         style={{ width: '100%' }}
+                         initial={{ height: 0 }} 
+                         animate={{ height: `${relativeHeight}%` }} 
+                         transition={{ delay: 0.3 + i * 0.08, duration: 0.5 }} 
                       />
                     </div>
                   );
@@ -220,7 +236,7 @@ export default function ProDashboard() {
                     <Badge variant={statusColors[appt.status] || 'primary'} size="sm">
                       {String(t(`appointments.status.${appt.status}`, appt.status))}
                     </Badge>
-                    {appt.price > 0 && <span className="pro-appt-price">${appt.price.toFixed(0)}</span>}
+                    {appt.price > 0 && <span className="pro-appt-price">{formatCOP(appt.price)}</span>}
                   </div>
 
                   {appt.status === 'pending' && (

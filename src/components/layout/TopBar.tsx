@@ -57,7 +57,13 @@ function useNotifications() {
     setUnread(0);
   };
 
-  return { notifications, unread, markRead, markAllRead };
+  const deleteAll = async () => {
+    await apiClient.patch('/notifications/delete-all').catch(() => {});
+    setNotifications([]);
+    setUnread(0);
+  };
+
+  return { notifications, unread, markRead, markAllRead, deleteAll };
 }
 
 const typeColors: Record<string, string> = {
@@ -71,7 +77,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const { user, logout, role } = useAuth();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { notifications, unread, markRead, markAllRead } = useNotifications();
+  const { notifications, unread, markRead, markAllRead, deleteAll } = useNotifications();
 
   const [showNotif, setShowNotif] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -156,10 +162,15 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             >
               <div className="topbar-dropdown-header">
                 <h3>{t('sharedPages.pro.notifTitle', 'Notificaciones')}</h3>
-                {unread > 0 && (
-                  <button className="topbar-dropdown-action" onClick={markAllRead}>
-                    <CheckCheck size={14} /> {t('sharedPages.pro.markAllRead', 'Marcar todo leído')}
-                  </button>
+                {notifications.length > 0 && (
+                  <div className="topbar-dropdown-actions">
+                    <button className="topbar-dropdown-action" onClick={markAllRead} title={t('sharedPages.pro.markAllRead', 'Marcar todo leído')}>
+                      <CheckCheck size={14} />
+                    </button>
+                    <button className="topbar-dropdown-action danger" onClick={deleteAll} title={t('nav.clearAll', 'Borrar todo')}>
+                      <LogOut size={14} style={{ transform: 'rotate(90deg)' }} /> 
+                    </button>
+                  </div>
                 )}
               </div>
               <div className="topbar-dropdown-list">

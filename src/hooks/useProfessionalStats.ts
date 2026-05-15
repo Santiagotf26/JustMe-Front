@@ -9,10 +9,12 @@ export interface DashboardStats {
   averageRating: number;
   totalClients: number;
   completedBookings: number;
+  walletBalance: number;
   weeklyEarningsByDay: number[];
+  weeklyBookingsByDay: number[];
   topServices: { name: string; count: number; revenue: number }[];
-  rating: number;
-  growthPercent: number;
+  recentReviews: any[];
+  incentive: any;
 }
 
 export function useProfessionalStats(professionalId: string | number | null) {

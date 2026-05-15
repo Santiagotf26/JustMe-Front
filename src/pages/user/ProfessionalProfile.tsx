@@ -17,6 +17,15 @@ export default function ProfessionalProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { t } = useTranslation();
+  
+  const formatCOP = (val: number | string) => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+    }).format(num || 0).replace('COP', '$');
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -113,13 +122,13 @@ export default function ProfessionalProfile() {
                 const svcName = svc.name || svc.service?.name || t('proDash.service', 'Servicio');
                 return (
                   <Card key={svc.id || i} variant="default" padding="sm" hover className="service-row"
-                    onClick={() => navigate(`/user/booking/${pro.id}`)}>
+                    onClick={() => navigate(`/user/booking/${pro.id}?serviceId=${svc.id}`)}>
                     <div className="service-info">
                       <h4>{svcName}</h4>
                       <span className="service-dur"><Clock size={13} /> {svc.duration || 30} min</span>
                     </div>
                     <div className="service-price-action">
-                      <span className="service-price">${svc.price || 0}</span>
+                      <span className="service-price">{formatCOP(svc.price || 0)}</span>
                       <ChevronRight size={16} />
                     </div>
                   </Card>
@@ -174,7 +183,7 @@ export default function ProfessionalProfile() {
       <div className="pro-book-cta glass">
         <div className="cta-price-info">
           <span className="cta-from">{t('proProfile.from')}</span>
-          <span className="cta-price">${basePrice}</span>
+          <span className="cta-price">{formatCOP(basePrice)}</span>
         </div>
         <Button size="lg" onClick={() => navigate(`/user/booking/${pro.id}`)} iconRight={<DollarSign size={18} />}>
           {t('proProfile.bookNow')}

@@ -293,8 +293,11 @@ export default function ProSchedule() {
                 <select value={String(schedule.advanceNotice)} onChange={e => setSchedule((prev: any) => ({ ...prev, advanceNotice: parseInt(e.target.value) }))}>
                   <option value="1">1 {t('proSchedule.hours')}</option>
                   <option value="2">2 {t('proSchedule.hours')}</option>
+                  <option value="3">3 {t('proSchedule.hours')}</option>
+                  <option value="6">6 {t('proSchedule.hours')}</option>
                   <option value="12">12 {t('proSchedule.hours')}</option>
                   <option value="24">24 {t('proSchedule.hours')}</option>
+                  <option value="48">48 {t('proSchedule.hours')}</option>
                 </select>
                 <p className="ps-help-text">{t('proSchedule.advanceHelp')}</p>
               </div>

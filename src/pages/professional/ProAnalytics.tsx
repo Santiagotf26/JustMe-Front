@@ -11,6 +11,15 @@ export default function ProAnalytics() {
   const { professionalId } = useAuth();
   
   const { stats, loading } = useProfessionalStats(professionalId);
+  
+  const formatCOP = (val: number | string) => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+    }).format(num || 0).replace('COP', '$');
+  };
 
   if (loading) {
     return (
@@ -112,7 +121,7 @@ export default function ProAnalytics() {
             <div>
               <h3>{t('proAnalytics.thisWeek')}</h3>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-500)', marginTop: '2px' }}>
-                Ingresos este mes: ${s.monthlyEarnings || s.totalRevenue || 0} <span style={{ color: (s.monthlyTrend || 0) >= 0 ? 'var(--success-500)' : 'var(--error-500)' }}>({(s.monthlyTrend || 0) > 0 ? '+' : ''}{s.monthlyTrend || 0}%)</span>
+                Ingresos este mes: {formatCOP(s.monthlyEarnings || s.totalRevenue || 0)} <span style={{ color: (s.monthlyTrend || 0) >= 0 ? 'var(--success-500)' : 'var(--error-500)' }}>({(s.monthlyTrend || 0) > 0 ? '+' : ''}{s.monthlyTrend || 0}%)</span>
               </p>
             </div>
             <Button size="sm" variant="ghost">{t('proAnalytics.viewDetails')} <ChevronRight size={14} /></Button>
@@ -150,7 +159,7 @@ export default function ProAnalytics() {
                     <span className="pa-svc-name">{svc.name}</span>
                     <span className="pa-svc-bookings">{t('proAnalytics.svcBookings', { count: svc.count || svc.bookings || 0 })}</span>
                   </div>
-                  <div className="pa-svc-rev">${svc.revenue || 0}</div>
+                  <div className="pa-svc-rev">{formatCOP(svc.revenue || 0)}</div>
                 </div>
               ))
             )}
