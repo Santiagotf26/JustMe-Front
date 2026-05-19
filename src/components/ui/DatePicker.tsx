@@ -46,7 +46,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({ selectedDate, onSelect }
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   };
 
-  const formatDate = (date: Date) => date.toISOString().split('T')[0];
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
   const isSelected = (date: Date) => selectedDate && formatDate(date) === selectedDate;
   const isPast = (date: Date) => date < today;
   const isToday = (date: Date) => date.getTime() === today.getTime();

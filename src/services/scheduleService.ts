@@ -1,9 +1,9 @@
 import { apiClient } from './api';
 
 export const scheduleService = {
-  getAvailableSlots: async (professionalId: number, date: string) => {
-    const response = await apiClient.get(`/schedule/${professionalId}/slots`, {
-      params: { date },
+  getAvailableSlots: async (professionalId: number, date: string, serviceDuration?: number) => {
+    const response = await apiClient.get(`/schedule/${professionalId}/available-slots`, {
+      params: { date, serviceDuration },
     });
     return response.data; // Expects { date: string, slots: string[] }
   },

@@ -87,18 +87,12 @@ export default function SearchPage() {
   const [panelExpanded, setPanelExpanded] = useState(true);
 
   // Booking
-  const [bookingSlot, setBookingSlot] = useState('');
+  // Booking
   const [bookingLoading, setBookingLoading] = useState(false);
-
-
 
   const [backendPros, setBackendPros] = useState<any[]>([]);
   const [loadingPros, setLoadingPros] = useState(false);
-  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedProDetails, setSelectedProDetails] = useState<any>(null);
-  const [loadingProDetails, setLoadingProDetails] = useState(false);
-  const [selectedServicesList, setSelectedServicesList] = useState<any[]>([]);
 
   // Fetch initial nearby professionals on load
   useEffect(() => {
@@ -124,7 +118,7 @@ export default function SearchPage() {
         const lat = Number(p.latitude);
         const lng = Number(p.longitude);
         const services = p.professionalServices?.map((ps: any) => ps.service?.category) || [];
-        const serviceNames = p.professionalServices?.map((ps: any) => ps.service?.name) || [];
+        const serviceNames = p.professionalServices?.map((ps: any) => ps.name || ps.service?.name) || [];
         
         return {
           ...p,
@@ -159,6 +153,15 @@ export default function SearchPage() {
   const nearby = filtered.filter(p => !p.isFavorite);
   const selectedPro = backendPros.find(p => p.id === selectedProId);
 
+  const selectedSvcData = useMemo(() => {
+    if (!selectedPro || !selectedService) return null;
+    return selectedPro.professionalServices?.find((ps: any) => 
+      ps.service?.name === selectedService || ps.name === selectedService || ps.service?.category === selectedService
+    );
+  }, [selectedPro, selectedService]);
+
+  const bookingPrice = selectedSvcData?.price || selectedPro?.price || 0;
+
   const canSearch = selectedService && selectedDate && selectedTime;
 
   const handleSearch = async () => {
@@ -187,12 +190,10 @@ export default function SearchPage() {
   const handleSelectPro = async (id: string) => {
     setSelectedProId(id);
     setPhase('profile');
-    setBookingSlot('');
     
     // Fetch detailed real professional data
-    setLoadingProDetails(true);
     try {
-      const details = await professionalsService.getProfessionalById(Number(id));
+      const details = await professionalsService.getProfessionalById(String(id));
       setSelectedProDetails({
         ...details,
         name: details.user?.name || t('search.professional'),
@@ -201,30 +202,25 @@ export default function SearchPage() {
       });
     } catch (e) {
       console.error('Failed to fetch pro details', e);
-    } finally {
-      setLoadingProDetails(false);
     }
   };
   const handleStartBooking = async (id: string) => {
     setSelectedProId(id);
     const pro = favorites.find(p => String(p.id) === id) || nearby.find(p => String(p.id) === id);
-    if (pro) setSelectedPro(pro);
     
     setPhase('booking');
-    setBookingSlot('');
     setPanelExpanded(true);
     
-    setSelectedServicesList([{ name: selectedService }]); 
-    
-    setLoadingSlots(true);
     try {
-      const data = await scheduleService.getAvailableSlots(Number(id), selectedDate);
-      setAvailableSlots(data.slots || []);
+      // Find the selected service duration, default to 60 if not found
+      const matchSvc = pro?.professionalServices?.find((ps: any) => 
+        ps.service?.name === selectedService || ps.service?.category === selectedService
+      );
+      const duration = matchSvc?.duration || 60;
+      
+      await scheduleService.getAvailableSlots(Number(id), selectedDate, duration);
     } catch (e) {
       console.error('Failed to fetch slots', e);
-      setAvailableSlots([]);
-    } finally {
-      setLoadingSlots(false);
     }
   };
 
@@ -251,7 +247,7 @@ export default function SearchPage() {
       // Try payment redirect
       try {
         const payment = await paymentsService.createPayment({
-          amount: selectedPro.price,
+          amount: bookingPrice,
           metadata: { bookingId: booking.id }
         });
         if (payment?.init_point) {
@@ -282,7 +278,6 @@ export default function SearchPage() {
     setSelectedDate('');
     setSelectedTime('');
     setSelectedProId(null);
-    setBookingSlot('');
     setPanelExpanded(true);
   };
 
@@ -669,7 +664,7 @@ export default function SearchPage() {
 
                    <div className="checkout-total">
                      <span>Total Estimado</span>
-                     <strong>${selectedPro.price}</strong>
+                     <strong>${new Intl.NumberFormat('es-CO').format(bookingPrice)}</strong>
                    </div>
                    
                    <p className="checkout-disclaimer">
@@ -726,7 +721,7 @@ export default function SearchPage() {
               </div>
               <div className="uber-confirm-price">
                 <span>{t('search.total')}</span>
-                <strong>${selectedPro.price}</strong>
+                <strong>${new Intl.NumberFormat('es-CO').format(bookingPrice)}</strong>
               </div>
             </div>
 

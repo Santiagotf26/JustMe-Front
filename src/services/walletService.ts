@@ -2,25 +2,21 @@ import { apiClient } from './api';
 
 export interface RechargeDto {
   amount: number;
-  currency: 'USD' | 'COP';
+  currency: 'COP';
 }
-
-// Approximate conversion rate (simulated)
-export const COP_TO_USD_RATE = 0.00024;
-export const USD_TO_COP_RATE = 4150;
 
 export const walletService = {
   // Backend: GET /wallet/:professionalId (returns balance + transactions)
-  getBalance: async (professionalId: string) => {
+  getBalance: async (professionalId: string | number) => {
     try {
       const response = await apiClient.get(`/wallet/${professionalId}`);
-      return response.data; // { balance, transactions }
+      return response.data; // { balance, transactions, currency }
     } catch {
-      return { balance: 0, transactions: [] };
+      return { balance: 0, transactions: [], currency: 'COP' };
     }
   },
 
-  getTransactions: async (professionalId: string) => {
+  getTransactions: async (professionalId: string | number) => {
     try {
       const response = await apiClient.get(`/wallet/${professionalId}`);
       return response.data?.transactions || [];
@@ -30,13 +26,10 @@ export const walletService = {
   },
 
   // Backend: POST /wallet/:professionalId/recharge  body: { amount }
-  recharge: async (professionalId: string, data: RechargeDto) => {
-    // Convert COP to USD for backend if needed
-    const amountUSD = data.currency === 'COP'
-      ? data.amount * COP_TO_USD_RATE
-      : data.amount;
+  recharge: async (professionalId: string | number, data: RechargeDto) => {
+    // Only COP supported as requested
     const response = await apiClient.post(`/wallet/${professionalId}/recharge`, {
-      amount: amountUSD,
+      amount: data.amount,
     });
     return response.data;
   },

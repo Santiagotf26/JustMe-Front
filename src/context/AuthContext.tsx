@@ -32,6 +32,7 @@ interface AuthContextType {
   switchRole: (role: 'user' | 'professional' | 'admin') => void;
   refreshVerificationStatus: () => Promise<void>;
   setUser: (user: UserProfile | null) => void;
+  resolveProfessionalId: (userId: string | number) => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -209,7 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       verificationStatus: vStatus,
       professionalId,
       login, loginWithToken, register, logout, switchRole,
-      refreshVerificationStatus, setUser,
+      refreshVerificationStatus, setUser, resolveProfessionalId,
     }}>
       {children}
     </AuthContext.Provider>

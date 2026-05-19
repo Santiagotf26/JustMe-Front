@@ -32,11 +32,18 @@ apiClient.interceptors.response.use(
   },
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      console.warn('Unauthorized access - clearing session');
-      localStorage.removeItem('justme_token');
-      localStorage.removeItem('justme_role');
-      // Dispatch custom event to let AuthContext know it should log out
-      window.dispatchEvent(new Event('auth:unauthorized'));
+      const configToken = error.config?.headers?.Authorization?.toString().split(' ')[1];
+      const currentToken = localStorage.getItem('justme_token');
+      
+      // Solo limpiar si el token que falló es el que tenemos actualmente
+      if (configToken === currentToken || !currentToken) {
+        console.warn('Unauthorized access - clearing session');
+        localStorage.removeItem('justme_token');
+        localStorage.removeItem('justme_role');
+        window.dispatchEvent(new Event('auth:unauthorized'));
+      } else {
+        console.warn('Ignoring 401 from an old/different token');
+      }
     }
     return Promise.reject(error);
   }

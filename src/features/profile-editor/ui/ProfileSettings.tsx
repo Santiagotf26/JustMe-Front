@@ -1,14 +1,14 @@
-import React, { useState, ChangeEvent } from 'react';
+import { useState, type ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuthStore } from '@/entities/session/model/store';
-import { apiClient } from '@/shared/api/axiosClient';
+import { useAuthStore } from '../../../entities/session/model/store';
+import { apiClient } from '../../../shared/api/axiosClient';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import * as Avatar from '@radix-ui/react-avatar';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Loader2, Settings, User as UserIcon, LogOut, ChevronDown } from 'lucide-react';
-import { AddressManager, Address } from './AddressManager';
+import { AddressManager, type Address } from './AddressManager';
 
 // Esquema de validación estricta Zod
 const profileSchema = z.object({
