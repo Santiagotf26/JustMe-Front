@@ -23,14 +23,17 @@ interface AuthContextType {
   isLoggingIn: boolean;
   verificationStatus: VerificationStatus['status'];
   professionalId: string | null; // The ID from the professionals table
-  login: (credentials: LoginCredentials) => Promise<void>;
-  loginWithToken: (token: string, roleParam?: string | null) => Promise<void>;
+  login: (credentials: LoginCredentials, rememberMe?: boolean) => Promise<void>;
+  loginWithToken: (token: string, roleParam?: string | null, rememberMe?: boolean) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   switchRole: (role: 'user' | 'professional' | 'admin') => void;
   refreshVerificationStatus: () => Promise<void>;
   setUser: (user: UserProfile | null) => void;
   resolveProfessionalId: (userId: string | number) => Promise<string | null>;
+  isLoginModalOpen: boolean;
+  openLoginModal: () => void;
+  closeLoginModal: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -38,11 +41,15 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [role, setRole] = useState<'user' | 'professional' | 'admin' | null>(() => {
-    return (localStorage.getItem('justme_role') as any) || null;
+    return (localStorage.getItem('justme_role') as any) || (sessionStorage.getItem('justme_role') as any) || null;
   });
   const [isLoggingIn, setIsLoggingIn] = useState(true);
   const [vStatus, setVStatus] = useState<VerificationStatus['status']>('none');
   const [professionalId, setProfessionalId] = useState<string | null>(null);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  const openLoginModal = () => setIsLoginModalOpen(true);
+  const closeLoginModal = () => setIsLoginModalOpen(false);
 
   const refreshVerificationStatus = async () => {
     try {
@@ -63,7 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (proProfile?.id) {
         const pid = String(proProfile.id);
         setProfessionalId(pid);
-        localStorage.setItem('justme_professional_id', pid);
+        if (localStorage.getItem('justme_token')) {
+          localStorage.setItem('justme_professional_id', pid);
+          sessionStorage.removeItem('justme_professional_id');
+        } else {
+          sessionStorage.setItem('justme_professional_id', pid);
+          localStorage.removeItem('justme_professional_id');
+        }
         return pid;
       }
     } catch {
@@ -71,20 +84,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setProfessionalId(null);
     localStorage.removeItem('justme_professional_id');
+    sessionStorage.removeItem('justme_professional_id');
     return null;
   };
 
   // Automatically fetch user profile if token exists
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem('justme_token');
+      const token = localStorage.getItem('justme_token') || sessionStorage.getItem('justme_token');
       if (token) {
         try {
           const profile = await authService.getProfile();
           const userRole = profile.roles?.[0]?.name || 'user';
           setUser({ ...profile, role: userRole });
           setRole(userRole as any);
-          localStorage.setItem('justme_role', userRole);
+          if (localStorage.getItem('justme_token')) {
+            localStorage.setItem('justme_role', userRole);
+          } else {
+            sessionStorage.setItem('justme_role', userRole);
+          }
 
           // Fetch verification status and professional ID
           if (userRole === 'professional') {
@@ -92,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await resolveProfessionalId(profile.id);
           } else {
             // Even users might have applied to be a professional
-            const cachedPid = localStorage.getItem('justme_professional_id');
+            const cachedPid = localStorage.getItem('justme_professional_id') || sessionStorage.getItem('justme_professional_id');
             if (cachedPid) setProfessionalId(cachedPid);
           }
         } catch (error) {
@@ -110,17 +128,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, []);
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = async (credentials: LoginCredentials, rememberMe: boolean = false) => {
     setIsLoggingIn(true);
     try {
       const response = await authService.login(credentials);
       const token = response.access_token || response.token;
       if (token) {
-        localStorage.setItem('justme_token', token);
+        if (rememberMe) {
+          localStorage.setItem('justme_token', token);
+          sessionStorage.removeItem('justme_token');
+        } else {
+          sessionStorage.setItem('justme_token', token);
+          localStorage.removeItem('justme_token');
+        }
       }
 
-      const userRole = response.user.roles?.[0]?.name || 'user';
-      localStorage.setItem('justme_role', userRole);
+      const userRole = response?.user?.roles?.[0]?.name || 'user';
+      if (rememberMe) {
+        localStorage.setItem('justme_role', userRole);
+        sessionStorage.removeItem('justme_role');
+      } else {
+        sessionStorage.setItem('justme_role', userRole);
+        localStorage.removeItem('justme_role');
+      }
       setUser({ ...response.user, role: userRole } as unknown as UserProfile);
       setRole(userRole as any);
 
@@ -136,15 +166,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loginWithToken = async (token: string, roleParam?: string | null) => {
+  const loginWithToken = async (token: string, roleParam?: string | null, rememberMe: boolean = false) => {
     setIsLoggingIn(true);
     try {
-      localStorage.setItem('justme_token', token);
+      if (rememberMe) {
+        localStorage.setItem('justme_token', token);
+      } else {
+        sessionStorage.setItem('justme_token', token);
+      }
       
       const profile = await authService.getProfile();
       const userRole = roleParam || profile.roles?.[0]?.name || 'user';
       
-      localStorage.setItem('justme_role', userRole);
+      if (rememberMe) {
+        localStorage.setItem('justme_role', userRole);
+        sessionStorage.removeItem('justme_role');
+      } else {
+        sessionStorage.setItem('justme_role', userRole);
+        localStorage.removeItem('justme_role');
+      }
       setUser({ ...profile, role: userRole } as unknown as UserProfile);
       setRole(userRole as any);
 
@@ -167,10 +207,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = response.access_token || response.token;
       if (token) {
         localStorage.setItem('justme_token', token);
+        sessionStorage.removeItem('justme_token');
       }
 
-      const userRole = response.user.roles?.[0]?.name || 'user';
+      const userRole = response?.user?.roles?.[0]?.name || 'user';
       localStorage.setItem('justme_role', userRole);
+      sessionStorage.removeItem('justme_role');
       setUser({ ...response.user, role: userRole } as unknown as UserProfile);
       setRole(userRole as any);
     } catch (error) {
@@ -189,13 +231,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('justme_token');
     localStorage.removeItem('justme_role');
     localStorage.removeItem('justme_professional_id');
+    sessionStorage.removeItem('justme_token');
+    sessionStorage.removeItem('justme_role');
+    sessionStorage.removeItem('justme_professional_id');
   };
 
   const switchRole = (newRole: 'user' | 'professional' | 'admin') => {
     if (user) {
       setUser({ ...user, roles: [{ id: 0, name: newRole }] });
       setRole(newRole);
-      localStorage.setItem('justme_role', newRole);
+      if (localStorage.getItem('justme_token')) {
+        localStorage.setItem('justme_role', newRole);
+        sessionStorage.removeItem('justme_role');
+      } else {
+        sessionStorage.setItem('justme_role', newRole);
+        localStorage.removeItem('justme_role');
+      }
       if (newRole === 'professional' && !professionalId) {
         resolveProfessionalId(user.id);
       }
@@ -209,6 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       professionalId,
       login, loginWithToken, register, logout, switchRole,
       refreshVerificationStatus, setUser, resolveProfessionalId,
+      isLoginModalOpen, openLoginModal, closeLoginModal
     }}>
       {children}
     </AuthContext.Provider>

@@ -12,7 +12,7 @@ export const apiClient = axios.create({
 // Request Interceptor: Attach JWT Token
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('justme_token');
+    const token = localStorage.getItem('justme_token') || sessionStorage.getItem('justme_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -23,12 +23,23 @@ apiClient.interceptors.request.use(
 
 // Response Interceptor: Handle global errors (e.g., 401 Unauthorized)
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    // Unwrap standard backend response { success: true, data: ... } OR { message: 'success', data: ... }
+    const res = response.data;
+    const isWrapped = res && res.data !== undefined && (res.success !== undefined || res.message === 'success' || res.statusCode !== undefined);
+    
+    if (isWrapped) {
+      response.data = res.data;
+    }
+    return response;
+  },
   (error: AxiosError) => {
     if (error.response?.status === 401) {
       console.warn('Unauthorized access - clearing session');
       localStorage.removeItem('justme_token');
       localStorage.removeItem('justme_role');
+      sessionStorage.removeItem('justme_token');
+      sessionStorage.removeItem('justme_role');
       // Dispatch custom event to let AuthContext know it should log out
       window.dispatchEvent(new Event('auth:unauthorized'));
     }

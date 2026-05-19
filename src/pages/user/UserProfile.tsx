@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import './UserProfile.css';
 
 export default function UserProfile() {
-  const { user, logout, verificationStatus, refreshVerificationStatus, setUser } = useAuth();
+  const { user, logout, verificationStatus, refreshVerificationStatus, setUser, openLoginModal } = useAuth();
   const { bookings } = useBookings();
   const navigate = useNavigate();
   const { notify } = useNotification();
@@ -238,7 +238,7 @@ export default function UserProfile() {
 
       {/* Account Actions */}
       <section className="profile-section" style={{ marginTop: '2rem', textAlign: 'center' }}>
-        <Button variant="danger" onClick={() => { logout(); navigate('/login'); }}>{t('userProfile.logout')}</Button>
+        <Button variant="danger" onClick={() => { logout(); setTimeout(() => openLoginModal(), 100); navigate('/'); }}>{t('userProfile.logout')}</Button>
       </section>
 
       {/* Become Professional Modal */}

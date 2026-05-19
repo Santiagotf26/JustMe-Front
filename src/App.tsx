@@ -4,11 +4,12 @@ import { NotificationProvider } from './context/NotificationContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { Preloader } from './components/ui';
+import { Preloader, LoginModal } from './components/ui';
+import { useAuth } from './context/AuthContext';
+import { useEffect } from 'react';
 
 // Public pages
 import Landing from './pages/public/Landing';
-import Login from './pages/public/Login';
 import Register from './pages/public/Register';
 import ForgotPassword from './pages/public/ForgotPassword';
 import ResetPassword from './pages/public/ResetPassword';
@@ -40,6 +41,18 @@ import ProAnalytics from './pages/professional/ProAnalytics';
 
 import './styles/index.css';
 
+/**
+ * Legacy Login Redirect
+ * If a user navigates to /login, we redirect to home and open the modal.
+ */
+function LoginRedirect() {
+  const { openLoginModal } = useAuth();
+  useEffect(() => {
+    openLoginModal();
+  }, [openLoginModal]);
+  return <Navigate to="/" replace />;
+}
+
 function App() {
   return (
     <ThemeProvider>
@@ -50,7 +63,7 @@ function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<LoginRedirect />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -103,11 +116,17 @@ function App() {
             
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          <GlobalModals />
         </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
     </ThemeProvider>
   );
+}
+
+function GlobalModals() {
+  const { isLoginModalOpen, closeLoginModal } = useAuth();
+  return <LoginModal isOpen={isLoginModalOpen} onClose={closeLoginModal} />;
 }
 
 export default App;
