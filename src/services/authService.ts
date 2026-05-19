@@ -39,6 +39,7 @@ export const authService = {
         password: credentials.password
       };
       const response = await apiClient.post<AuthResponse>('/auth/login', payload);
+      console.log('Backend Login Response:', response.data);
       return response.data;
     } catch (error: any) {
       console.error('Login service error:', error.response?.data || error.message);

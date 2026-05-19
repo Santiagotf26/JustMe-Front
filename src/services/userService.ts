@@ -9,12 +9,20 @@ export interface UpdateUserProfileDto {
   longitude?: number;
   city?: string;
   department?: string;
+  addresses?: any[];
 }
 
 export const userService = {
   updateProfile: async (id: string, data: UpdateUserProfileDto) => {
     // Backend uses PUT /users/:userId
     const response = await apiClient.put(`/users/${id}`, data);
+    return response.data;
+  },
+
+  updateProfileImage: async (id: string, formData: FormData) => {
+    const response = await apiClient.patch(`/users/${id}/profile`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 

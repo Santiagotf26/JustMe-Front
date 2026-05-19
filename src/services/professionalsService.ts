@@ -116,32 +116,11 @@ export const professionalsService = {
   },
 
   getDashboardStats: async (professionalId: string) => {
-    // No dedicated stats endpoint exists yet — compute from bookings + reviews
     try {
-      const bookings = await apiClient.get(`/bookings/professional/${professionalId}`);
-      const reviews = await apiClient.get(`/reviews/professional/${professionalId}`);
-      
-      const bData = Array.isArray(bookings.data) ? bookings.data : [];
-      const rData = Array.isArray(reviews.data) ? reviews.data : [];
-
-      const totalBookings = bData.length;
-      const completedBookings = bData.filter((b: any) => b.status === 'completed').length;
-      const totalRevenue = bData
-        .filter((b: any) => b.status === 'completed' || b.status === 'confirmed')
-        .reduce((sum: number, b: any) => sum + (parseFloat(b.price) || 0), 0);
-      
-      const averageRating = rData.length > 0 
-        ? rData.reduce((sum: number, r: any) => sum + r.rating, 0) / rData.length 
-        : 5;
-
-      return {
-        totalBookings,
-        completedBookings,
-        totalRevenue,
-        averageRating
-      };
+      const response = await apiClient.get(`/professionals/${professionalId}/stats`);
+      return response.data;
     } catch {
-      return { totalBookings: 0, completedBookings: 0, totalRevenue: 0, averageRating: 5 };
+      return null;
     }
   },
 

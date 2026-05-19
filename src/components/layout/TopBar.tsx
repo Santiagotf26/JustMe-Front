@@ -1,4 +1,4 @@
-import { Bell, Search, Menu, Sparkles, CheckCheck, User, LogOut, Settings, Wallet } from 'lucide-react';
+import { Bell, Search, Menu, Sparkles, CheckCheck, User, LogOut, Settings, Wallet, Star } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../ui/Avatar';
@@ -57,7 +57,13 @@ function useNotifications() {
     setUnread(0);
   };
 
-  return { notifications, unread, markRead, markAllRead };
+  const deleteAll = async () => {
+    await apiClient.patch('/notifications/delete-all').catch(() => {});
+    setNotifications([]);
+    setUnread(0);
+  };
+
+  return { notifications, unread, markRead, markAllRead, deleteAll };
 }
 
 const typeColors: Record<string, string> = {
@@ -71,7 +77,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const { user, logout, role, openLoginModal } = useAuth();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { notifications, unread, markRead, markAllRead } = useNotifications();
+  const { notifications, unread, markRead, markAllRead, deleteAll } = useNotifications();
 
   const [showNotif, setShowNotif] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -157,10 +163,15 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             >
               <div className="topbar-dropdown-header">
                 <h3>{t('sharedPages.pro.notifTitle', 'Notificaciones')}</h3>
-                {unread > 0 && (
-                  <button className="topbar-dropdown-action" onClick={markAllRead}>
-                    <CheckCheck size={14} /> {t('sharedPages.pro.markAllRead', 'Marcar todo leído')}
-                  </button>
+                {notifications.length > 0 && (
+                  <div className="topbar-dropdown-actions">
+                    <button className="topbar-dropdown-action" onClick={markAllRead} title={t('sharedPages.pro.markAllRead', 'Marcar todo leído')}>
+                      <CheckCheck size={14} />
+                    </button>
+                    <button className="topbar-dropdown-action danger" onClick={deleteAll} title={t('nav.clearAll', 'Borrar todo')}>
+                      <LogOut size={14} style={{ transform: 'rotate(90deg)' }} /> 
+                    </button>
+                  </div>
                 )}
               </div>
               <div className="topbar-dropdown-list">
@@ -181,7 +192,10 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                       className="topbar-notif-icon"
                       style={{ background: `${typeColors[n.type] || typeColors.system}15`, color: typeColors[n.type] || typeColors.system }}
                     >
-                      <Sparkles size={14} />
+                      {n.type === 'booking' ? <Bell size={14} /> : 
+                       n.type === 'wallet' ? <Wallet size={14} /> : 
+                       n.type === 'review' ? <Star size={14} /> : 
+                       <Sparkles size={14} />}
                     </div>
                     <div className="topbar-notif-content">
                       <p className="topbar-notif-title">{n.title}</p>
