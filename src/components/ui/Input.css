@@ -49,6 +49,11 @@
   padding: 0 var(--space-1);
 }
 
+[data-theme="dark"] .input-label {
+  background: #0f172a !important; /* Forzamos fondo oscuro base */
+  color: #94a3b8 !important;
+}
+
 .has-icon-left ~ .input-label {
   left: var(--space-10);
 }
@@ -59,6 +64,11 @@
   color: var(--primary-500);
 }
 
+[data-theme="dark"] .input-label-float {
+  background: #0a0f1e !important; /* Fondo específico del modal para el label flotante */
+  color: #ff3333 !important;
+}
+
 .input-icon-left, .input-icon-right {
   position: absolute;
   display: flex;
@@ -67,12 +77,36 @@
   transition: color var(--transition-fast);
 }
 
+[data-theme="dark"] .input-icon-left, 
+[data-theme="dark"] .input-icon-right {
+  color: var(--neutral-500);
+}
+
 .input-icon-left { left: var(--space-3); }
 .input-icon-right { right: var(--space-3); }
 
 .input-focused .input-icon-left,
 .input-focused .input-icon-right {
   color: var(--primary-500);
+}
+
+[data-theme="dark"] .input-focused .input-icon-left,
+[data-theme="dark"] .input-focused .input-icon-right {
+  color: #ff3333;
+}
+
+/* Dark mode overrides for the field */
+[data-theme="dark"] .input-field {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .input-wrapper {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .input-wrapper:hover {
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 /* Error state */

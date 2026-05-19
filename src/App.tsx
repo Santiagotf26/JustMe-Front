@@ -1,15 +1,16 @@
-import { lazy, Suspense } from 'react';
+import { lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { Preloader } from './components/ui';
+import { Preloader, LoginModal } from './components/ui';
+import { useAuth } from './context/AuthContext';
+import { useEffect } from 'react';
 
 // ── Public pages (NOT lazy — immediate load for landing/auth) ──
 import Landing from './pages/public/Landing';
-import Login from './pages/public/Login';
 import Register from './pages/public/Register';
 import ForgotPassword from './pages/public/ForgotPassword';
 import ResetPassword from './pages/public/ResetPassword';
@@ -55,20 +56,15 @@ import {
 import './styles/index.css';
 
 /**
- * Fallback spinner shown while lazy chunks load.
+ * Legacy Login Redirect
+ * If a user navigates to /login, we redirect to home and open the modal.
  */
-function LazyFallback() {
-  return (
-    <div style={{ display: 'flex', height: '60vh', justifyContent: 'center', alignItems: 'center' }}>
-      <div style={{
-        width: 36, height: 36,
-        border: '3px solid var(--neutral-200)',
-        borderTopColor: 'var(--primary-500)',
-        borderRadius: '50%',
-        animation: 'spin 0.8s linear infinite',
-      }} />
-    </div>
-  );
+function LoginRedirect() {
+  const { openLoginModal } = useAuth();
+  useEffect(() => {
+    openLoginModal();
+  }, [openLoginModal]);
+  return <Navigate to="/" replace />;
 }
 
 function App() {
@@ -78,14 +74,13 @@ function App() {
       <AuthProvider>
         <NotificationProvider>
           <Preloader />
-          <Suspense fallback={<LazyFallback />}>
-            <Routes>
-              {/* Public Routes (not lazy) */}
-              <Route path="/" element={<Landing />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<LoginRedirect />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
               {/* User Routes (lazy loaded) */}
               <Route element={<ProtectedRoute allowedRoles={['user', 'professional', 'admin']} />}>
@@ -132,15 +127,20 @@ function App() {
                   <Route path="profile" element={<AdminProfile />} />
                 </Route>
               </Route>
-              
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
+            
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+          <GlobalModals />
         </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
     </ThemeProvider>
   );
+}
+
+function GlobalModals() {
+  const { isLoginModalOpen, closeLoginModal } = useAuth();
+  return <LoginModal isOpen={isLoginModalOpen} onClose={closeLoginModal} />;
 }
 
 export default App;
