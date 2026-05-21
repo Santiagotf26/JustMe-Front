@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Brain, Send, Bot, User, Loader, TrendingUp, TrendingDown,
   Users, Calendar, DollarSign, Star, AlertTriangle, CheckCircle,
-  Zap, Activity, Sparkles, RefreshCw, ChevronRight
+  Zap, Activity, Sparkles, RefreshCw
 } from 'lucide-react';
 import { Card, Button } from '../../../components/ui';
 import { useAiMetrics, useAiInsights, useAiAlerts, useAiChat } from '../hooks/useAdminAi';

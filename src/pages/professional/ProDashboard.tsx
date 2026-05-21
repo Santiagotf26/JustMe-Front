@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, DollarSign, Star, TrendingUp, Clock, Users, AlertCircle, MapPin, Scissors, Check, X } from 'lucide-react';
+import { Calendar, DollarSign, Star, TrendingUp, Clock, AlertCircle, MapPin, Scissors, Check, X } from 'lucide-react';
 import { Card, Avatar, Badge, Button, Tabs } from '../../components/ui';
 import { VerificationBanner } from '../../components/ui/VerificationBanner';
 import { useAuth } from '../../context/AuthContext';
@@ -150,7 +150,7 @@ export default function ProDashboard() {
             <h2 className="earnings-amount">{formatCOP(stats?.monthlyEarnings || 0)}</h2>
           </div>
           <div className="earnings-trend">
-            <TrendingUp size={16} /> {stats?.monthlyTrend || stats?.growthPercent || 0}%
+            <TrendingUp size={16} /> {stats?.monthlyTrend || 0}%
           </div>
         </div>
         
@@ -344,7 +344,7 @@ export default function ProDashboard() {
             <Button size="sm" variant="ghost" onClick={() => navigate('/professional/reviews')}>{t('userHome.seeAll')}</Button>
           </div>
           <div className="dash-list">
-            {!stats?.rating ? (
+            {!stats?.averageRating ? (
               <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--neutral-400)' }}>
                 <Star size={32} style={{ opacity: 0.4, marginBottom: '8px' }} />
                 <p style={{ margin: 0, fontWeight: 600 }}>{t('sharedPages.pro.noRev')}</p>

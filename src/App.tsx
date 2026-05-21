@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { Preloader } from './components/ui';
+import { Preloader, LoginModal } from './components/ui';
 
 // Public pages
 import Landing from './pages/public/Landing';
@@ -40,6 +40,11 @@ import ProAnalytics from './pages/professional/ProAnalytics';
 
 import './styles/index.css';
 
+function GlobalModals() {
+  const { isLoginModalOpen, closeLoginModal } = useAuth();
+  return <LoginModal isOpen={isLoginModalOpen} onClose={closeLoginModal} />;
+}
+
 function App() {
   return (
     <ThemeProvider>
@@ -47,6 +52,7 @@ function App() {
       <AuthProvider>
         <NotificationProvider>
           <Preloader />
+          <GlobalModals />
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Landing />} />

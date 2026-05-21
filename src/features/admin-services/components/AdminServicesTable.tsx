@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Plus, Edit2, Trash2, Loader, Scissors, Tag, AlertCircle, Layers
+  Plus, Edit2, Trash2, Loader, Scissors, Tag, Layers
 } from 'lucide-react';
 import { Card, Badge, Button } from '../../../components/ui';
 import { useServiceCategories } from '../hooks/useServiceCategories';

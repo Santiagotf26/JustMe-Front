@@ -16,6 +16,7 @@ export interface UserProfile {
   latitude?: number;
   longitude?: number;
   addresses?: { id: string; label?: string; title?: string; current?: boolean; address: string }[];
+  isTwoFactorEnabled?: boolean;
 }
 
 interface AuthContextType {
@@ -158,7 +159,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (userRole === 'professional') {
         await refreshVerificationStatus();
-        await resolveProfessionalId(response.user.id);
+        if (response.user?.id) {
+          await resolveProfessionalId(response.user.id);
+        }
       }
     } catch (error) {
       console.error('Login error in context:', error);

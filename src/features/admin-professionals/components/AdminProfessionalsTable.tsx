@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, Edit2, Loader, ChevronLeft, ChevronRight, CheckCircle, ShieldAlert, Star, Users
 } from 'lucide-react';
-import { Card, Badge, Avatar, Button, Input, Rating } from '../../../components/ui';
+import { Card, Avatar, Button, Input } from '../../../components/ui';
 import { useProfessionals } from '../hooks/useProfessionals';
 import type { Professional } from '../types';
 import { ProfessionalEditModal } from './ProfessionalEditModal';

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Search, Edit2, Loader, ChevronLeft, ChevronRight, User as UserIcon, AlertCircle
+  Search, Edit2, Loader, ChevronLeft, ChevronRight, User as UserIcon
 } from 'lucide-react';
 import { Card, Badge, Avatar, Button, Input } from '../../../components/ui';
 import { useUsers } from '../hooks/useUsers';
