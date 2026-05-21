@@ -32,8 +32,8 @@ export const transactionService = {
     const data = response.data;
     return {
       totalRevenue: data?.totalRevenue || 0,
-      totalCommissions: data?.totalCommissions || 0,
-      totalTx: data?.totalTx || 0
+      totalCommissions: data?.commissionsCollected || data?.totalCommissions || 0,
+      totalTx: data?.totalBookings || data?.totalTx || 0
     };
   }
 };

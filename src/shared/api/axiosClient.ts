@@ -23,9 +23,20 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Interceptor de Respuesta: Manejar 401/403
+// Interceptor de Respuesta: Unwrap envelope { success, data, timestamp } del backend
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const res = response.data;
+    const isWrapped =
+      res &&
+      res.data !== undefined &&
+      (res.success !== undefined || res.message === 'success' || res.statusCode !== undefined);
+
+    if (isWrapped) {
+      response.data = res.data;
+    }
+    return response;
+  },
   (error: AxiosError) => {
     if (error.response?.status === 401 || error.response?.status === 403) {
       // Limpiamos el token del mismo store que usa AuthContext
