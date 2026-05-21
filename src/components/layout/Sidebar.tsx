@@ -50,11 +50,13 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
   const adminLinks = [
     { to: '/admin', icon: <LayoutDashboard size={20} />, label: t('sidebar.links.dashboard') },
+    { to: '/admin/ai', icon: <Sparkles size={20} />, label: 'Admin IA' },
+    { to: '/admin/analytics', icon: <BarChart3 size={20} />, label: t('sidebar.links.analytics') },
+    { to: '/admin/transactions', icon: <FileText size={20} />, label: t('sidebar.links.transactions') },
+    { to: '/admin/bookings', icon: <CalendarDays size={20} />, label: 'Citas' },
     { to: '/admin/users', icon: <Users size={20} />, label: t('sidebar.links.users') },
     { to: '/admin/professionals', icon: <Briefcase size={20} />, label: t('sidebar.links.professionals') },
     { to: '/admin/services', icon: <Scissors size={20} />, label: t('sidebar.links.services') },
-    { to: '/admin/transactions', icon: <FileText size={20} />, label: t('sidebar.links.transactions') },
-    { to: '/admin/analytics', icon: <BarChart3 size={20} />, label: t('sidebar.links.analytics') },
     { to: '/admin/settings', icon: <Settings size={20} />, label: t('sidebar.links.settings') },
     { to: '/admin/profile', icon: <UserCircle size={20} />, label: t('sidebar.links.profile') },
   ];

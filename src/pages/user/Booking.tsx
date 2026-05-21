@@ -103,11 +103,10 @@ export default function Booking() {
     setLoading(true);
     try {
       const booking = await bookingService.createBooking({
-        professionalId: pro.id,
-        serviceName: selectedService,
+        professionalId: Number(pro.id),
+        professionalServiceId: selectedSvc?.id || 1,
         date: selectedDate,
-        time: selectedTime,
-        price: selectedSvc?.price || pro.price || 0,
+        startTime: selectedTime,
       });
 
       // Try payment if available

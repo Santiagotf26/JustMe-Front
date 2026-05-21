@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/shared/api/axiosClient';
+import { apiClient } from '../../../shared/api/axiosClient';
 
 // Entidad: Professional (Reemplazar con la ruta real a futuro)
 export interface Professional {

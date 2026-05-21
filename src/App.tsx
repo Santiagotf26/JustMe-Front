@@ -32,7 +32,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 // Shared sub-pages
 import {
   ProBookingRequests, ProCalendar, ProEarnings, ProServices, ProPortfolio, ProProfileEditor, ProReviews,
-  AdminUsers, AdminProfessionals, AdminServices, AdminTransactions, AdminAnalytics, AdminSettings, AdminProfile,
+  AdminUsers, AdminProfessionals, AdminServices, AdminTransactions, AdminAnalytics, AdminSettings, AdminProfile, AdminBookings, AdminAi,
   UserFavorites, UserPayments,
 } from './pages/SharedPages';
 import ProSchedule from './pages/professional/ProSchedule';
@@ -95,7 +95,9 @@ function App() {
                 <Route path="professionals" element={<AdminProfessionals />} />
                 <Route path="services" element={<AdminServices />} />
                 <Route path="transactions" element={<AdminTransactions />} />
+                <Route path="bookings" element={<AdminBookings />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="ai" element={<AdminAi />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="profile" element={<AdminProfile />} />
               </Route>

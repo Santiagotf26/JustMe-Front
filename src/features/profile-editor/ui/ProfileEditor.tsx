@@ -1,13 +1,13 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuthStore } from '@/entities/session/model/store';
-import { apiClient } from '@/shared/api/axiosClient';
+import { useAuthStore } from '../../../entities/session/model/store';
+import { apiClient } from '../../../shared/api/axiosClient';
 import { useMutation } from '@tanstack/react-query';
-import { useState, ChangeEvent } from 'react';
+import { type ChangeEvent, useState } from 'react';
 import * as Avatar from '@radix-ui/react-avatar';
-import { Button } from '@/shared/ui/Button';
-import { Input } from '@/shared/ui/Input';
+import { Button } from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
 
 const profileSchema = z.object({
   firstName: z.string().min(2, 'El nombre es muy corto'),
@@ -82,7 +82,7 @@ export const ProfileEditor = () => {
         <Input label="Dirección" placeholder="Empieza a escribir..." error={errors.address?.message} {...register('address')} />
       </div>
 
-      <Button type="submit" isLoading={updateMutation.isPending} className="w-full bg-[#E34234] text-white">
+      <Button type="submit" loading={updateMutation.isPending} className="w-full bg-[#E34234] text-white">
         Guardar Cambios
       </Button>
     </form>

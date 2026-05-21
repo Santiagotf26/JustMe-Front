@@ -1,7 +1,7 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuthStore } from '@/entities/session/model/store';
-import { UserRole } from '@/shared/config/roles';
+import { useAuthStore } from '../../entities/session/model/store';
+import { UserRole } from '../../shared/config/roles';
 
 interface RoleGuardProps {
   allowedRoles: UserRole[];

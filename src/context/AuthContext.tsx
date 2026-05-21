@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { authService, type LoginCredentials, type RegisterData } from '../services/authService';
+import { authService, type LoginCredentials, type RegisterData, type AuthResponse } from '../services/authService';
 import { verificationService, type VerificationStatus } from '../services/verificationService';
 import { professionalsService } from '../services/professionalsService';
 
@@ -16,6 +16,7 @@ export interface UserProfile {
   latitude?: number;
   longitude?: number;
   addresses?: { id: string; label?: string; title?: string; current?: boolean; address: string }[];
+  isTwoFactorEnabled?: boolean;
 }
 
 interface AuthContextType {
@@ -25,9 +26,10 @@ interface AuthContextType {
   isLoggingIn: boolean;
   verificationStatus: VerificationStatus['status'];
   professionalId: string | null; // The ID from the professionals table
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<AuthResponse>;
   loginWithToken: (token: string, roleParam?: string | null) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
+  verify2FA: (userId: number, code: string) => Promise<void>;
   logout: () => void;
   switchRole: (role: 'user' | 'professional' | 'admin') => void;
   refreshVerificationStatus: () => Promise<void>;
@@ -111,26 +113,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, []);
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
     setIsLoggingIn(true);
     try {
       const response = await authService.login(credentials);
+
+      if (response.require2FA) {
+        return response;
+      }
+
       const token = response.access_token || response.token;
       if (token) {
         localStorage.setItem('justme_token', token);
       }
 
-      const userRole = response.user.roles?.[0]?.name || 'user';
-      localStorage.setItem('justme_role', userRole);
-      setUser({ ...response.user, role: userRole } as unknown as UserProfile);
-      setRole(userRole as any);
+      if (response.user) {
+        const userRole = response.user.roles?.[0]?.name || 'user';
+        localStorage.setItem('justme_role', userRole);
+        setUser({ ...response.user, role: userRole } as unknown as UserProfile);
+        setRole(userRole as any);
 
-      if (userRole === 'professional') {
-        await refreshVerificationStatus();
-        await resolveProfessionalId(response.user.id);
+        if (userRole === 'professional') {
+          await refreshVerificationStatus();
+          await resolveProfessionalId(response.user.id);
+        }
       }
+      return response;
     } catch (error) {
       console.error('Login error in context:', error);
+      throw error;
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const verify2FA = async (userId: number, code: string) => {
+    setIsLoggingIn(true);
+    try {
+      const response = await authService.authenticate2FA(userId, code);
+      const token = response.access_token || response.token;
+      if (token) {
+        localStorage.setItem('justme_token', token);
+      }
+
+      if (response.user) {
+        const userRole = response.user.roles?.[0]?.name || 'user';
+        localStorage.setItem('justme_role', userRole);
+        setUser({ ...response.user, role: userRole } as unknown as UserProfile);
+        setRole(userRole as any);
+
+        if (userRole === 'professional') {
+          await refreshVerificationStatus();
+          await resolveProfessionalId(response.user.id);
+        }
+      }
+    } catch (error) {
+      console.error('2FA verification error:', error);
       throw error;
     } finally {
       setIsLoggingIn(false);
@@ -141,10 +179,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoggingIn(true);
     try {
       localStorage.setItem('justme_token', token);
-      
+
       const profile = await authService.getProfile();
       const userRole = roleParam || profile.roles?.[0]?.name || 'user';
-      
+
       localStorage.setItem('justme_role', userRole);
       setUser({ ...profile, role: userRole } as unknown as UserProfile);
       setRole(userRole as any);
@@ -170,10 +208,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('justme_token', token);
       }
 
-      const userRole = response.user.roles?.[0]?.name || 'user';
-      localStorage.setItem('justme_role', userRole);
-      setUser({ ...response.user, role: userRole } as unknown as UserProfile);
-      setRole(userRole as any);
+      if (response.user) {
+        const userRole = response.user.roles?.[0]?.name || 'user';
+        localStorage.setItem('justme_role', userRole);
+        setUser({ ...response.user, role: userRole } as unknown as UserProfile);
+        setRole(userRole as any);
+      }
     } catch (error) {
       console.error('Registration error in context:', error);
       throw error;
@@ -208,7 +248,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user, isAuthenticated: !!user, role, isLoggingIn,
       verificationStatus: vStatus,
       professionalId,
-      login, loginWithToken, register, logout, switchRole,
+      login, loginWithToken, register, verify2FA, logout, switchRole,
       refreshVerificationStatus, setUser,
     }}>
       {children}

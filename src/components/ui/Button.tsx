@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import './Button.css';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'accent';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'accent' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   icon?: ReactNode;
   iconRight?: ReactNode;
