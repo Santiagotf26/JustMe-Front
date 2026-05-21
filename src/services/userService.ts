@@ -19,6 +19,13 @@ export const userService = {
     return response.data;
   },
 
+  updateProfileImage: async (id: string, formData: FormData) => {
+    const response = await apiClient.patch(`/users/${id}/profile`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
   adminUpdateUser: async (id: string | number, data: any) => {
     const response = await apiClient.put(`/users/${id}`, data);
     return response.data;
@@ -72,5 +79,14 @@ export const userService = {
     } catch {
       return false;
     }
+  },
+
+  uploadAvatar: async (userId: string | number, file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await apiClient.post(`/users/${userId}/avatar`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
   },
 };

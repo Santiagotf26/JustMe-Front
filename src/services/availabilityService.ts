@@ -15,12 +15,18 @@ export const availabilityService = {
      * Get available slots for a professional on a specific date.
      * Falls back to generating slots from schedule if endpoint not available.
      */
-    getAvailability: async (professionalId: string, date?: string): Promise<DayAvailability[]> => {
+    getAvailability: async (professionalId: string, date?: string, serviceId?: string | number): Promise<DayAvailability[]> => {
         try {
             const params: any = {};
             if (date) params.date = date;
-            const response = await apiClient.get(`/availability/${professionalId}`, { params });
-            return response.data;
+            if (serviceId) params.serviceId = serviceId;
+            const response = await apiClient.get(`/schedule/${professionalId}/available-slots`, { params });
+            
+            // Handle if response is a single object {date, slots} or array
+            if (response.data && !Array.isArray(response.data)) {
+                return [response.data];
+            }
+            return response.data || [];
         } catch {
             // Fallback: return empty availability
             return [];

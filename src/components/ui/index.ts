@@ -12,4 +12,4 @@ export { Preloader } from './Preloader';
 export { BecomeProfessionalModal } from './BecomeProfessionalModal';
 export { VerificationBanner } from './VerificationBanner';
 export { ModeTransition } from './ModeTransition';
-export { Switch } from './Switch';
+export { LoginModal } from './LoginModal';

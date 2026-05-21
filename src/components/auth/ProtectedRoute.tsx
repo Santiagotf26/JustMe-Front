@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ allowedRoles, requireApproved }: ProtectedRouteProps) {
-  const { isAuthenticated, role, isLoggingIn, verificationStatus } = useAuth();
+  const { isAuthenticated, role, isLoggingIn, verificationStatus, openLoginModal } = useAuth();
 
   if (isLoggingIn) {
     return (
@@ -19,7 +19,9 @@ export function ProtectedRoute({ allowedRoles, requireApproved }: ProtectedRoute
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    // Si no está autenticado, abrimos el modal y enviamos a la raíz
+    setTimeout(() => openLoginModal(), 100);
+    return <Navigate to="/" replace />;
   }
 
   if (allowedRoles && role && !allowedRoles.includes(role)) {

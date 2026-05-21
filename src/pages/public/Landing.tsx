@@ -1,226 +1,224 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowRight, Star, MapPin, Clock, Shield, Sparkles, Scissors, Heart, Hand, Droplets, Waves, Gem } from 'lucide-react';
-import { Button } from '../../components/ui';
-import { ThemeToggle, LanguageToggle } from '../../components/ui';
+import { Star, Verified, CreditCard, ArrowRight, Sparkles, Menu, X } from 'lucide-react';
+
+import { Button, ThemeToggle, LanguageToggle } from '../../components/ui';
 import { useTranslation } from 'react-i18next';
-import { Scene3D } from '../../components/three/Scene3D';
+import { useAuth } from '../../context/AuthContext';
 import './Landing.css';
+import videoo from '../../assets/imagenes/videoo.mp4';
+import senora1 from '../../assets/imagenes/señora_1.png';
+import senora2 from '../../assets/imagenes/señora_2.png';
+import senora3 from '../../assets/imagenes/señora_3.png';
+import senora4 from '../../assets/imagenes/señora_4.png';
+import senora6 from '../../assets/imagenes/señora_6.png';
 
 export default function Landing() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-
-  const services = [
-    { name: t('landing.servicesList.barber'), icon: <Scissors size={28} />, color: '#dc2626' },
-    { name: t('landing.servicesList.hairStylist'), icon: <Sparkles size={28} />, color: '#f59e0b' },
-    { name: t('landing.servicesList.makeup'), icon: <Star size={28} />, color: '#f59e0b' },
-    { name: t('landing.servicesList.nails'), icon: <Hand size={28} />, color: '#ec4899' },
-    { name: t('landing.servicesList.skincare'), icon: <Droplets size={28} />, color: '#10b981' },
-    { name: t('landing.servicesList.massage'), icon: <Heart size={28} />, color: '#6366f1' },
-    { name: t('landing.servicesList.spa'), icon: <Waves size={28} />, color: '#06b6d4' },
-    { name: t('landing.servicesList.grooming'), icon: <Scissors size={28} />, color: '#8b5cf6' },
-  ];
-
-  const steps = [
-    { num: '01', title: t('landing.steps.step1Title'), desc: t('landing.steps.step1Desc') },
-    { num: '02', title: t('landing.steps.step2Title'), desc: t('landing.steps.step2Desc') },
-    { num: '03', title: t('landing.steps.step3Title'), desc: t('landing.steps.step3Desc') },
-    { num: '04', title: t('landing.steps.step4Title'), desc: t('landing.steps.step4Desc') },
-  ];
-
-  const stats = [
-    { value: '12K+', label: t('landing.stats.clients') },
-    { value: '3K+', label: t('landing.stats.professionals') },
-    { value: '45K+', label: t('landing.stats.bookings') },
-    { value: '4.9', label: t('landing.stats.rating') },
-  ];
-
+  const { openLoginModal } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <div className="landing">
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-3d">
-          <Scene3D color1="#dc2626" color2="#f59e0b" scale={2.2} distort={0.5} />
-        </div>
-        <div className="hero-overlay" />
-        <nav className="landing-nav container">
-          <div className="nav-brand">
-            <span className="nav-logo-icon"><Sparkles size={20} /></span>
-            <span className="nav-logo-text">JustMe</span>
+    <div className={`landing ${isMenuOpen ? 'menu-open' : ''}`}>
+      {/* TopNavBar */}
+      <header className="lux-header">
+        <div className="lux-header-inner">
+          <div className="lux-brand">
+            <span className="lux-logo-text">JustMe</span>
           </div>
-          <div className="nav-links">
-            <a href="#services">{t('nav.services')}</a>
-            <a href="#how-it-works">{t('nav.howItWorks')}</a>
-            <a href="#professionals">{t('nav.professionals')}</a>
-          </div>
-          <div className="nav-actions">
-            <LanguageToggle size="sm" />
-            <ThemeToggle size="sm" />
-            <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>{t('nav.signIn')}</Button>
-            <Button variant="primary" size="sm" onClick={() => navigate('/register')}>{t('nav.getStarted')}</Button>
-          </div>
-        </nav>
 
-        <div className="hero-content container">
-          <motion.div
-            className="hero-text"
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-          >
-            <span className="hero-badge"><Gem size={14} /> {t('landing.heroBadge')}</span>
-            <h1 className="hero-title">
-              {t('landing.heroTitle1')}<br />
-              <span className="text-gradient">{t('landing.heroTitle2')}</span>
-            </h1>
-            <p className="hero-subtitle">
-              {t('landing.heroSubtitle')}
-            </p>
-            <div className="hero-actions">
-              <Button size="lg" onClick={() => navigate('/register')} iconRight={<ArrowRight size={20} />}>
-                {t('landing.bookProfessional')}
-              </Button>
-              <Button variant="secondary" size="lg" onClick={() => navigate('/register?role=professional')}>
-                {t('landing.joinProfessional')}
-              </Button>
+          {/* Desktop Nav */}
+          <nav className="lux-nav-links">
+            <a href="#inicio">Inicio</a>
+            <a href="#servicios">Servicios</a>
+            <a href="#como-funciona">Cómo funciona</a>
+            <a href="#profesionales">Profesionales</a>
+          </nav>
+
+          <div className="nav-actions">
+            <div className="desktop-actions">
+              <LanguageToggle size="sm" />
             </div>
-            <div className="hero-stats">
-              {stats.map((s, i) => (
-                <motion.div
-                  key={s.label}
-                  className="hero-stat"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 + i * 0.1 }}
-                >
-                  <span className="hero-stat-value">{s.value}</span>
-                  <span className="hero-stat-label">{s.label}</span>
-                </motion.div>
+            <ThemeToggle size="sm" />
+            <Button variant="ghost" size="sm" onClick={openLoginModal} id="landing-signin-btn">{t('nav.signIn')}</Button>
+            <Button variant="primary" size="sm" onClick={() => navigate('/register')}>{t('nav.getStarted')}</Button>
+
+            {/* Hamburger Trigger */}
+            <button className="lux-menu-trigger" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu Overlay */}
+        <div className={`lux-mobile-menu ${isMenuOpen ? 'active' : ''}`}>
+          <nav className="lux-mobile-nav">
+            <a href="#inicio" onClick={() => setIsMenuOpen(false)}>Inicio</a>
+            <a href="#servicios" onClick={() => setIsMenuOpen(false)}>Servicios</a>
+            <a href="#como-funciona" onClick={() => setIsMenuOpen(false)}>Cómo funciona</a>
+            <a href="#profesionales" onClick={() => setIsMenuOpen(false)}>Profesionales</a>
+            <a href="#contacto" onClick={() => setIsMenuOpen(false)}>Contacto</a>
+            <hr className="lux-mobile-divider" />
+            <div className="lux-mobile-extra">
+              <div className="lux-mobile-row">
+                <span>Idioma</span>
+                <LanguageToggle size="md" />
+              </div>
+              <Button variant="primary" className="w-full" onClick={() => navigate('/register')}>{t('nav.getStarted')}</Button>
+            </div>
+          </nav>
+        </div>
+      </header>
+
+      <main className="lux-main">
+        {/* Hero Section */}
+        <section id="inicio" className="lux-hero">
+          <div className="lux-hero-bg">
+            <video autoPlay loop muted playsInline src={videoo} />
+            <div className="lux-hero-overlay"></div>
+          </div>
+          <div className="lux-hero-content" style={{ maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
+            <div className="lux-hero-text">
+              <h1>La excelencia del salón, <br /><span className="lux-highlight">en la comodidad de tu hogar.</span></h1>
+              <p>Reserva servicios de belleza premium con los mejores profesionales certificados. Llevamos el lujo a tu puerta.</p>
+              <div className="lux-hero-actions">
+                <Button size="lg" onClick={() => navigate('/register')}>Descubrir servicios</Button>
+                <Button variant="secondary" size="lg" onClick={() => navigate('/register?role=professional')}>Ver especialistas</Button>
+              </div>
+            </div>
+          </div>
+          {/* Organic Wave */}
+          <div className="lux-hero-wave">
+            <svg viewBox="0 0 1440 120" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z"></path>
+            </svg>
+          </div>
+        </section>
+
+        {/* Services */}
+        <section id="servicios" className="lux-services">
+          <div className="container" style={{ maxWidth: '1280px', margin: '0 auto' }}>
+            <div className="lux-services-grid">
+              {['Faciales', 'Cabello', 'Masajes', 'Depilación', 'Barbería', 'Uñas', 'Maquillaje'].map((s, i) => (
+                <div key={i} className="lux-service-item group">
+                  <div className="lux-service-icon">
+                    <Sparkles className="text-[#DC143C]" size={32} color="#DC143C" />
+                  </div>
+                  <span>{s}</span>
+                </div>
               ))}
             </div>
-          </motion.div>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Services Section */}
-      <section className="services-section" id="services">
-        <div className="container">
-          <motion.div
-            className="section-header"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <span className="section-badge">{t('landing.servicesBadge')}</span>
-            <h2>{t('landing.servicesTitle1')}<br /><span className="text-gradient">{t('landing.servicesTitle2')}</span></h2>
-            <p className="section-desc">{t('landing.servicesDesc')}</p>
-          </motion.div>
+        {/* Explore & Collage Section */}
+        <section id="como-funciona" className="lux-explore">
+          <div className="container lux-explore-container" style={{ maxWidth: '1280px', margin: '0 auto' }}>
+            <div className="lux-explore-image-wrapper">
+              <div className="lux-explore-shape">
+                <img alt="Beauty Collage" src={senora1} />
 
-          <div className="services-grid">
-            {services.map((svc, i) => (
-              <motion.div
-                key={svc.name}
-                className="service-card glass"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.08 }}
-                whileHover={{ y: -8, scale: 1.03 }}
-              >
-                <div className="service-icon" style={{ color: svc.color, background: `${svc.color}15` }}>
-                  {svc.icon}
+              </div>
+              <div className="lux-floating-card">
+                <div className="lux-star-icon"><Star size={20} fill="currentColor" /></div>
+                <div>
+                  <p className="lux-rating-text">4.9/5 RATING</p>
+                  <p className="lux-rating-sub">Basado en +10k servicios</p>
                 </div>
-                <h3>{svc.name}</h3>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="how-section" id="how-it-works">
-        <div className="container">
-          <motion.div
-            className="section-header"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <span className="section-badge">{t('landing.howBadge')}</span>
-            <h2>{t('landing.howTitle1')}<br /><span className="text-gradient">{t('landing.howTitle2')}</span></h2>
-          </motion.div>
-
-          <div className="steps-grid">
-            {steps.map((step, i) => (
-              <motion.div
-                key={step.num}
-                className="step-card"
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.15 }}
-              >
-                <span className="step-num">{step.num}</span>
-                <h3>{step.title}</h3>
-                <p>{step.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="features-section">
-        <div className="container">
-          <div className="features-grid">
-            <motion.div className="feature-card glass" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-              <div className="feature-icon"><MapPin size={24} /></div>
-              <h3>{t('landing.features.feature1Title')}</h3>
-              <p>{t('landing.features.feature1Desc')}</p>
-            </motion.div>
-            <motion.div className="feature-card glass" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
-              <div className="feature-icon"><Clock size={24} /></div>
-              <h3>{t('landing.features.feature2Title')}</h3>
-              <p>{t('landing.features.feature2Desc')}</p>
-            </motion.div>
-            <motion.div className="feature-card glass" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}>
-              <div className="feature-icon"><Shield size={24} /></div>
-              <h3>{t('landing.features.feature3Title')}</h3>
-              <p>{t('landing.features.feature3Desc')}</p>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="cta-section">
-        <div className="container">
-          <motion.div
-            className="cta-card"
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-          >
-            <h2>{t('landing.ctaTitle')}</h2>
-            <p>{t('landing.ctaDesc')}</p>
-            <div className="cta-actions">
-              <Button size="lg" onClick={() => navigate('/register')} iconRight={<ArrowRight size={20} />}>
-                {t('landing.ctaBtn')}
-              </Button>
+              </div>
             </div>
-          </motion.div>
-        </div>
-      </section>
+            <div className="lux-explore-text">
+              <h2>Explora una nueva <br />era del cuidado personal</h2>
+              <p className="lux-explore-desc">Utilizamos tecnología avanzada para conectar tu ubicación con los mejores artistas de belleza en tiempo real. Sin esperas, sin traslados, solo resultados excepcionales.</p>
+              <div className="lux-feature-list">
+                <div className="lux-feature-item">
+                  <div className="lux-feature-icon red"><Verified size={24} /></div>
+                  <div>
+                    <h4>Profesionales Certificados</h4>
+                    <p>Cada especialista pasa por un riguroso proceso de validación y pruebas de técnica.</p>
+                  </div>
+                </div>
+                <div className="lux-feature-item">
+                  <div className="lux-feature-icon teal"><CreditCard size={24} /></div>
+                  <div>
+                    <h4>Precios Transparentes</h4>
+                    <p>Sin cargos ocultos. Conoce el precio exacto antes de confirmar tu reserva.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Top Rated Professionals */}
+        <section id="profesionales" className="lux-professionals">
+          <div className="container" style={{ maxWidth: '1280px', margin: '0 auto' }}>
+            <div className="lux-prof-header">
+              <div>
+                <h2>Profesionales Destacados</h2>
+                <p>Reserva con los favoritos de nuestra comunidad esta semana.</p>
+              </div>
+              <button className="lux-see-all">Ver todos <ArrowRight size={20} /></button>
+            </div>
+
+            <div className="lux-prof-grid">
+              {[
+                { name: 'Elena Martinez', role: 'Especialista en Faciales & Skincare', img: senora2, price: '$85/sesión', score: '4.9', tags: ['HydraFacial', 'Peeling'] },
+                { name: 'Marcus Vance', role: 'Hair Stylist & Color Metry', img: senora3, price: '$120/sesión', score: '5.0', tags: ['Balayage', 'Tratamientos'] },
+                { name: 'Sofia Rossi', role: 'Manicurista & Masoterapeuta', img: senora4, price: '$65/sesión', score: '4.8', tags: ['Gelish', 'Relajante'] }
+              ].map((p, i) => (
+
+                <div key={i} className="lux-prof-card">
+                  <div className="lux-prof-img">
+                    <img src={p.img} alt={p.name} />
+                    <div className="lux-prof-price">{p.price}</div>
+                  </div>
+                  <div className="lux-prof-info">
+                    <div className="lux-prof-title">
+                      <div>
+                        <h3>{p.name}</h3>
+                        <p>{p.role}</p>
+                      </div>
+                      <div className="lux-score"><Star size={14} fill="currentColor" /> {p.score}</div>
+                    </div>
+                    <div className="lux-tags">
+                      {p.tags.map(t => <span key={t}>{t}</span>)}
+                    </div>
+                    <Button className="w-full">Reservar con {p.name.split(' ')[0]}</Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Promotion */}
+        <section className="lux-promo">
+          <div className="container" style={{ maxWidth: '1280px', margin: '0 auto' }}>
+            <div className="lux-promo-card">
+              <div className="lux-promo-content">
+                <span className="lux-promo-badge">OFERTA DE BIENVENIDA</span>
+                <h2>Obtén 20% de descuento en tu primer servicio</h2>
+                <p>Descarga la app, regístrate y usa el código <span className="lux-code">JustMe</span>.</p>
+              </div>
+              <div className="lux-promo-image">
+                <img src={senora6} alt="Promo" />
+                <div className="lux-promo-overlay"></div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+      </main>
 
       {/* Footer */}
-      <footer className="landing-footer">
+      <footer id="contacto" className="landing-footer">
         <div className="container">
           <div className="footer-grid">
             <div className="footer-brand">
               <div className="nav-brand">
-                <span className="nav-logo-icon"><Sparkles size={20} /></span>
+                <span className="nav-logo-icon"><Sparkles size={20} color="#DC143C" /></span>
                 <span className="nav-logo-text">JustMe</span>
               </div>
               <p>{t('landing.footer.desc')}</p>

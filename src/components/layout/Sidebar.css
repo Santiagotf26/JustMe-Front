@@ -6,7 +6,7 @@
   border-right: 1px solid var(--neutral-100);
   display: flex;
   flex-direction: column;
-  z-index: var(--z-sticky);
+  z-index: 6000;
   overflow-y: auto;
   transition: background var(--transition-theme), border-color var(--transition-theme);
 }

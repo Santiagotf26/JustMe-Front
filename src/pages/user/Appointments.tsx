@@ -26,12 +26,28 @@ export default function Appointments() {
   const [rescheduleTime, setRescheduleTime] = useState('');
   const [rescheduleLoading, setRescheduleLoading] = useState(false);
 
+  // Pagination Logic
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4;
+
+  const formatCOP = (val: number | string) => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+    }).format(num || 0).replace('COP', '$');
+  };
+
   const upcoming = bookings.filter(b => b.status === 'pending' || b.status === 'confirmed');
   const past = bookings.filter(b => b.status === 'completed' || b.status === 'cancelled');
-  const list = activeTab === 'upcoming' ? upcoming : past;
+  const fullList = activeTab === 'upcoming' ? upcoming : past;
+  
+  const totalPages = Math.ceil(fullList.length / itemsPerPage);
+  const paginatedList = fullList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const statusColors: Record<string, 'primary' | 'success' | 'warning' | 'error'> = {
-    pending: 'warning', confirmed: 'primary', completed: 'success', cancelled: 'error',
+  const statusColors: Record<string, 'primary' | 'success' | 'warning' | 'error' | 'default'> = {
+    pending: 'warning', confirmed: 'success', completed: 'default', cancelled: 'error',
   };
 
   const handleCancel = async () => {
@@ -91,15 +107,18 @@ export default function Appointments() {
   return (
     <div className="appointments-page">
       <h1>{t('appointments.title')}</h1>
-      <Tabs tabs={[{ id: 'upcoming', label: `${t('appointments.upcoming')} (${upcoming.length})` }, { id: 'past', label: `${t('appointments.past')} (${past.length})` }]} onChange={setActiveTab} />
+      <Tabs 
+        tabs={[{ id: 'upcoming', label: `${t('appointments.upcoming')} (${upcoming.length})` }, { id: 'past', label: `${t('appointments.past')} (${past.length})` }]} 
+        onChange={(tab) => { setActiveTab(tab); setCurrentPage(1); }} 
+      />
 
       <div className="appointments-list">
-        {list.length === 0 ? (
+        {paginatedList.length === 0 ? (
           <div className="empty-state">
             <Calendar size={48} style={{ color: 'var(--neutral-300)', marginBottom: '16px' }} />
             <p>{t('appointments.emptyState', { status: activeTab === 'upcoming' ? t('appointments.upcoming').toLowerCase() : t('appointments.past').toLowerCase() })}</p>
           </div>
-        ) : (list.map((b, i) => (
+        ) : (paginatedList.map((b, i) => (
           <motion.div key={b.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
             <Card variant="default" padding="md" hover className="appointment-card">
               <div className="appt-top">
@@ -111,12 +130,12 @@ export default function Appointments() {
                 <Badge variant={statusColors[b.status] || 'primary'} size="md">{t(`appointments.status.${b.status}`)}</Badge>
               </div>
               <div className="appt-details">
-                {b.date && <span><Calendar size={14} /> {new Date(b.date).toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}</span>}
+                {b.date && <span><Calendar size={14} /> {new Date(b.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>}
                 <span><Clock size={14} /> {b.time}</span>
                 <span><MapPin size={14} /> {b.locationType === 'home' ? t('appointments.home') : t('appointments.professional')}</span>
               </div>
               <div className="appt-bottom">
-                <span className="appt-price">${b.price}</span>
+                <span className="appt-price">{formatCOP(b.price)}</span>
                 {(b.status === 'pending' || b.status === 'confirmed') && (
                   <div className="appt-actions">
                     <Button size="sm" variant="ghost" onClick={() => {
@@ -132,6 +151,35 @@ export default function Appointments() {
             </Card>
           </motion.div>
         )))}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="pro-pagination" style={{ marginTop: 'var(--space-6)' }}>
+            <button 
+              disabled={currentPage === 1} 
+              onClick={() => { setCurrentPage(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              className="pagination-btn"
+            >
+              Anterior
+            </button>
+            <div className="pagination-pages">
+              {Array.from({ length: totalPages }).map((_, i) => (
+                <button 
+                  key={i} 
+                  className={`pagination-dot ${currentPage === i + 1 ? 'active' : ''}`}
+                  onClick={() => { setCurrentPage(i + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                />
+              ))}
+            </div>
+            <button 
+              disabled={currentPage === totalPages} 
+              onClick={() => { setCurrentPage(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              className="pagination-btn"
+            >
+              Siguiente
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ───── Cancel Confirmation Modal ───── */}

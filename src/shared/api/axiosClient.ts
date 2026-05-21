@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios';
+import { useAuthStore } from '../../entities/session/model/store';
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
@@ -9,10 +10,10 @@ export const apiClient = axios.create({
 });
 
 // Interceptor de Solicitud: Inyectar JWT
-// Lee el token del mismo localStorage que usa AuthContext ('justme_token')
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('justme_token');
+    // Obtenemos el token directamente del estado de Zustand
+    const token = useAuthStore.getState().token;
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -23,17 +24,12 @@ apiClient.interceptors.request.use(
 
 // Interceptor de Respuesta: Manejar 401/403
 apiClient.interceptors.response.use(
-  (response) => {
-    // Unwrap the standard backend response format { success: true, data: ... }
-    if (response.data && response.data.success !== undefined && response.data.data !== undefined) {
-      response.data = response.data.data;
-    }
-    return response;
-  },
+  (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem('justme_token');
-      localStorage.removeItem('justme_role');
+      // Si el token expira o el rol no es válido, cerramos sesión
+      useAuthStore.getState().logout();
+      // Opcionalmente, forzar recarga o redirección al login
       window.location.href = '/login?session_expired=true';
     }
     return Promise.reject(error);

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { useAuthStore } from '../../../entities/session/model/store';
 import { apiClient } from '../../../shared/api/axiosClient';
 import { useMutation } from '@tanstack/react-query';
-import { type ChangeEvent, useState } from 'react';
+import { useState, type ChangeEvent } from 'react';
 import * as Avatar from '@radix-ui/react-avatar';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';

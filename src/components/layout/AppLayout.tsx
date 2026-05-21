@@ -17,13 +17,14 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { isAuthenticated, isLoggingIn } = useAuth();
+  const { isAuthenticated, isLoggingIn, openLoginModal } = useAuth();
 
   useEffect(() => {
     if (!isLoggingIn && !isAuthenticated) {
-      navigate('/login');
+      setTimeout(() => openLoginModal(), 100);
+      navigate('/');
     }
-  }, [isLoggingIn, isAuthenticated, navigate]);
+  }, [isLoggingIn, isAuthenticated, navigate, openLoginModal]);
 
   if (isLoggingIn) {
     return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Loading...</div>;
