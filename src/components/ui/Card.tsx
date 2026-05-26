@@ -9,11 +9,12 @@ interface CardProps {
   hover?: boolean;
   className?: string;
   onClick?: () => void;
+  style?: React.CSSProperties;
 }
 
 export function Card({
   children, variant = 'default', padding = 'md', hover = false,
-  className = '', onClick,
+  className = '', onClick, style
 }: CardProps) {
   return (
     <motion.div
@@ -22,7 +23,7 @@ export function Card({
       whileHover={hover ? { y: -4, scale: 1.01 } : undefined}
       whileTap={onClick ? { scale: 0.99 } : undefined}
       transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-      style={onClick ? { cursor: 'pointer' } : undefined}
+      style={{ ...(onClick ? { cursor: 'pointer' } : {}), ...style }}
     >
       {children}
     </motion.div>

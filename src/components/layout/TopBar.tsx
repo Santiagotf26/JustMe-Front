@@ -74,7 +74,7 @@ const typeColors: Record<string, string> = {
 };
 
 export function TopBar({ onMenuClick }: TopBarProps) {
-  const { user, logout, role } = useAuth();
+  const { user, logout, role, openLoginModal } = useAuth();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { notifications, unread, markRead, markAllRead, deleteAll } = useNotifications();
@@ -117,7 +117,8 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const handleLogout = () => {
     setShowProfile(false);
     logout();
-    navigate('/login');
+    setTimeout(() => openLoginModal(), 100);
+    navigate('/');
   };
 
   return (

@@ -1,4 +1,4 @@
-import { apiClient } from '@/shared/api/axiosClient';
+import { apiClient } from '../../../shared/api/axiosClient';
 
 export interface Coupon {
   id: string;

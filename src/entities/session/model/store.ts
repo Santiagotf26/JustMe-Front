@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { UserRole } from '@/shared/config/roles';
+import { UserRole } from '../../../shared/config/roles';
 
 interface User {
   id: string;

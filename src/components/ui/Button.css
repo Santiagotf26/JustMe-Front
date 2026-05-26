@@ -42,6 +42,17 @@
   background: var(--primary-50);
 }
 
+.btn-outline {
+  background: transparent;
+  color: var(--neutral-800);
+  border: 1.5px solid var(--neutral-300);
+}
+.btn-outline:hover:not(:disabled) {
+  border-color: var(--primary-500);
+  color: var(--primary-600);
+  background: var(--primary-50);
+}
+
 .btn-ghost {
   background: transparent;
   color: var(--neutral-600);

@@ -20,7 +20,9 @@ export interface AuthResponse {
   access_token?: string;
   token?: string;
   refresh_token?: string;
-  user: {
+  require2FA?: boolean;
+  userId?: number;
+  user?: {
     id: number;
     name: string;
     lastName?: string;
@@ -28,6 +30,7 @@ export interface AuthResponse {
     roles: { id: number; name: string }[];
     photoUrl?: string;
     avatar?: string;
+    isTwoFactorEnabled?: boolean;
   };
 }
 
@@ -69,6 +72,27 @@ export const authService = {
 
   getProfile: async () => {
     const response = await apiClient.get('/auth/profile');
+    return response.data;
+  },
+
+  // 2FA Methods
+  generate2FA: async () => {
+    const response = await apiClient.post<{ qrCode: string }>('/auth/2fa/generate');
+    return response.data;
+  },
+
+  turnOn2FA: async (code: string) => {
+    const response = await apiClient.post('/auth/2fa/turn-on', { code });
+    return response.data;
+  },
+
+  turnOff2FA: async () => {
+    const response = await apiClient.post('/auth/2fa/turn-off');
+    return response.data;
+  },
+
+  authenticate2FA: async (userId: number, code: string): Promise<AuthResponse> => {
+    const response = await apiClient.post<AuthResponse>('/auth/2fa/authenticate', { userId, code });
     return response.data;
   }
 };
